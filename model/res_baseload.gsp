@@ -4,6 +4,12 @@
     "nodes": [
         {
             "codecMib": 106,
+            "file": "../text.gdx",
+            "name": "text.gdx",
+            "type": "gdx"
+        },
+        {
+            "codecMib": 106,
             "file": "model.gms",
             "name": "model.gms",
             "type": "gms"

@@ -1,10 +1,12 @@
+*$if not set data $set data "../text.gdx"
+
 Set
     i   generation technologies
-    /i1/
+*    /i1/
     s   storage technologies
-    /s1/
+*    /s1/
     t   time periods
-    /t1*t10000/
+*    /t1*t10000/
 ;
 
 Parameter
@@ -13,12 +15,16 @@ Parameter
     agen(i)             annual generation of technology i
     max_sto(s)          size storage [MWh]
     curtailment(i,t)    curtailment of technology i in period t [MW]
+    lostload            total lost load [MWh]
+    stats[*]            solution statistics
+    cost_curtailment(i) for adding curtailment amount ot objectiv
 ;
 
-dem(t) = 10*uniform(0.8, 1.2);
-agen(i) = sum(t, dem(t));
-alpha(i,t) = 1/card(t);
-max_sto(s) = 1;
+$gdxin %data%
+$load i s t
+$loaddc dem alpha agen max_sto cost_curtailment
+$gdxin
+
 
 Variable
     COST            objective value
@@ -42,7 +48,9 @@ Equations
 
 
 obj..
-    COST                    =E= sum(t, ENS(t))
+    COST                    =E= sum(t, ENS(t)
+                                + sum(i, cost_curtailment(i)*(alpha(i,t)*agen(i) - GEN(i,t)))
+                                )
 ;
 
 mkt(t)..
@@ -68,4 +76,6 @@ model baseload /obj, mkt, res_maxGEN, res_maxSTO, lom_STO/;
 solve baseload using LP minimzing COST;
 
 curtailment(i,t) = alpha(i,t)*agen(i) - GEN.L(i,t);
-display ENS.L, curtailment;
+lostload = COST.L;
+stats["modelstat"] = baseload.modelstat;
+stats["solvestat"] = baseload.solvestat;
