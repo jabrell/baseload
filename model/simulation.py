@@ -34,6 +34,7 @@ def create_inputs(
     share_renewable: float = 0.5,
     share_storage: float = 0,
     cost_curtailment: dict[str, float] = {"nuclear": 1, "renewable": 0},
+    total_demand: float | None = None,
 ) -> gt.Container:
     """Create inputs for model run based on ENTSOE renewable generation and demand.
 
@@ -44,6 +45,7 @@ def create_inputs(
       horizon
     - For renewable generation the profile is inferred based in the input data
     - Maximum storage size is determined as share of total demand
+    - Total demand can be normalized to given number
 
     Args:
         data: A dataframe with the following columns:
@@ -53,7 +55,7 @@ def create_inputs(
         share_renewable: Share of renewable in total generation
         share_storage: Storage size as share of total demand
         cost_curtailment: Cost of curtailment by technology
-
+        total_demand: If provided demand will be normalized to the given number
     Returns
         gdx container with data for model
     """
@@ -64,7 +66,9 @@ def create_inputs(
     gdx = gt.Container()
 
     # total demand and generation of each technology
-    total_demand = data["demand"].sum()
+
+    if total_demand is None:
+        total_demand = data["demand"].sum()
     # TODO allow for demand normalization
     total_generation = [
         ("nuclear", share_generation * total_demand * (1 - share_renewable)),
@@ -125,7 +129,6 @@ def extract_solution(gdx: gt.Container) -> pd.DataFrame:
     df = (
         gdx["GEN"]
         .records.pivot_table("level", "t", "i")
-        .join(gdx["dem"].records.set_index("t")["value"].to_frame("demand"))
         .join(
             gdx["REL"]
             .records.pivot_table("level", "t", "s")
@@ -137,6 +140,8 @@ def extract_solution(gdx: gt.Container) -> pd.DataFrame:
             .assign(netStorage=lambda df: df.sum(1))
             .iloc[:, [-1]]
         )
+        .join(gdx["dem"].records.set_index("t")["value"].to_frame("demand"))
+        .join(gdx["ENS"].records.set_index("t")["level"].to_frame("energyNotServed"))
         .join(
             gdx["STO"]
             .records.pivot_table("level", "t", "s")
@@ -221,6 +226,7 @@ def simulate(
     for s_ren in share_renewable:
         print(f"---- Simulations for renewable share: {s_ren}")
         for s_gen in share_generation:
+            print(f"\t---- Simulations for generation share: {s_gen}")
             for s_sto in share_storage:
                 for c_cur in cost_curtailment:
                     gdx = create_inputs(
@@ -248,7 +254,12 @@ def simulate(
                         )
                         continue
                     lst_df.append(extract_solution(sol))
-        df = pd.concat(lst_df)
-        if fn_out is not None:
-            df.to_parquet(fn_out, index=False)
-        return df
+    df = (
+        pd.concat(lst_df)
+        .reset_index()
+        .assign(date=lambda df: pd.to_datetime(df["t"]))
+        .drop("t", axis=1)
+    )
+    if fn_out is not None:
+        df.to_parquet(fn_out, index=False)
+    return df
