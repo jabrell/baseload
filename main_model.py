@@ -11,6 +11,7 @@ if __name__ == "__main__":
             {"nuclear": 1, "renewable": 0},
             {"nuclear": 0, "renewable": 1},
         ],
+        total_demand=100,
         fn_out="./data/results.parquet",
         country="DE",
         start="2017/06/01 00:00",
@@ -18,4 +19,4 @@ if __name__ == "__main__":
     )
     end = time.time()
     print(f"Time taken: {end - start}")
-    print("hello")
+    print("Finished!")

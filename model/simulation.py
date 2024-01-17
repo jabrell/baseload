@@ -164,13 +164,13 @@ def extract_solution(gdx: gt.Container) -> pd.DataFrame:
     # get scenario specification
     agen = gdx["agen"].records.assign(share=lambda df: df["value"] / df["value"].sum())
     df["share_generation"] = agen["value"].sum() / df["demand"].sum()
-    if "renewable" in agen["i"]:
+    if "renewable" in agen["i"].unique():
         df["share_renewable"] = agen.query("i == 'renewable'")["share"].iloc[0]
     else:
-        df["share_renewable"] = 0
+        df["share_renewable"] = 0.0
     max_sto = gdx["max_sto"].records
     if max_sto is None:
-        df["share_storage"] = 0
+        df["share_storage"] = 0.0
     else:
         df["share_storage"] = max_sto["value"].iloc[0] / df["demand"].sum()
     cost_curtail = gdx["cost_curtailment"].records.set_index("i")["value"].to_dict()
@@ -184,6 +184,7 @@ def simulate(
     share_renewable: list[float],
     share_storage: list[float],
     cost_curtailment: list[dict[str, float]] = [{"nuclear": 1, "renewable": 0}],
+    total_demand: float | None = None,
     country: str = "DE",
     start: str = "2017/01/01 00:00",
     end: str = "2017/12/31 23",
@@ -200,6 +201,7 @@ def simulate(
       horizon
     - For renewable generation the profile is inferred based in the input data
     - Maximum storage size is determined as share of total demand
+    - Total demand can be normalized to given number
 
     Args:
         share_generation: list of multiplier used to derive total generation as multiple
@@ -208,6 +210,7 @@ def simulate(
         share_storage: list of Storage size as share of total demand
         cost_curtailment: list of Cost of curtailment by technology
         country: name of the country as letter ENTSOE code
+        total_demand: If provided demand will be normalized to the given number
         renewable: renewable source used as input. Possible are:
             windOnshore, solar, windOffshore
         start: first hour to be included
@@ -235,6 +238,7 @@ def simulate(
                         share_renewable=s_ren,
                         share_storage=s_sto,
                         cost_curtailment=c_cur,
+                        total_demand=total_demand,
                     )
                     model = GamsModel(database=gdx)
                     model.add_database(container=gdx, in_model_name="data")
