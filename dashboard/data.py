@@ -33,6 +33,36 @@ def download_data(url, fn_out):
 
 
 @st.cache_data
+def get_hourly_results(
+    fn_results: str,
+    share_generation: float,
+    share_storage: float,
+    share_renewable: float,
+    curtail_res_first=True,
+) -> pd.DataFrame:
+    """
+    Get hourly results
+
+    Args:
+        fn_results: name of file with hourly results
+        share_generation: total generation as multiple of demand
+        curtail_res_first: indicator whether renewable are curtailed fir
+    """
+    df = pd.read_parquet(
+        fn_results,
+        filters=[
+            (f"share_generation", "==", share_generation),
+            (f"share_storage", "==", share_storage),
+            (f"share_renewable", "==", share_renewable),
+        ],
+    ).assign(
+        curtailRenewableFirst=lambda df: df["costCurtailRenewable"]
+        <= df["costCurtailNuclear"],
+    )
+    return df[df["curtailRenewableFirst"] == curtail_res_first]
+
+
+@st.cache_data
 def get_total_results(fn_results: str) -> pd.DataFrame:
     """Get results aggregate over all periods
 

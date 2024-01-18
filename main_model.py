@@ -7,7 +7,7 @@ if __name__ == "__main__":
     df = simulate(
         share_generation=np.arange(1, 1.25, 0.05),
         share_renewable=np.arange(0, 1.1, 0.1),
-        share_storage=np.arange(0, 0.00006, 0.00001),
+        share_storage=np.arange(0, 0.00011, 0.00001),
         cost_curtailment=[
             {"nuclear": 1, "renewable": 0},
             {"nuclear": 0, "renewable": 1},

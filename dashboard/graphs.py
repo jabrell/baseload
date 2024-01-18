@@ -37,7 +37,6 @@ def get_plot_variable(
         .set_index(["share_storage", "share_renewable"])
         .reset_index()
     )
-    print(df.groupby("share_storage").share_renewable.count())
     return df
 
 
