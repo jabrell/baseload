@@ -60,9 +60,23 @@ def get_total_results(fn_results: str) -> pd.DataFrame:
         pd.read_parquet(fn_results)
         .assign(
             curtailRenewableFirst=lambda df: df["costCurtailRenewable"]
-            >= df["costCurtailNuclear"]
+            <= df["costCurtailNuclear"],
         )
         .groupby(idx, as_index=False)[cols]
         .sum()
     )
-    return df_annual
+    # to some rounding in the index columns to avoid mismatches due to
+    # precision caused by parquet file inputs
+    to_round = ["share_storage", "share_generation", "share_renewable"]
+    df_annual.loc[:, to_round] = df_annual.loc[:, to_round].round(8)
+
+    # curtailment in percent of total generation
+    df_annual = df_annual.assign(
+        curtailNuclearPercent=lambda df: df["curtailNuclear"]
+        / (df["nuclear"] + df["curtailNuclear"])
+        * 100,
+        curtailRenewablePercent=lambda df: df["curtailRenewable"]
+        / (df["renewable"] + df["curtailRenewable"])
+        * 100,
+    )
+    return df_annual.fillna(0)

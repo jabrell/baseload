@@ -22,9 +22,8 @@ def get_plot_variable(
         share_generation: total generation as multiple of demand
         curtail_res_first: indicator whether renewable are curtailed first
     """
-    return (
-        df_annual
-        .query(f"share_generation == {share_generation}")
+    df = (
+        df_annual.query(f"share_generation == {share_generation}")
         .query(f"curtailRenewableFirst == {curtail_res_first}")
         .assign(
             cost=lambda df: (
@@ -36,9 +35,10 @@ def get_plot_variable(
         )
         .drop(["curtailRenewableFirst", "share_generation"], axis=1)
         .set_index(["share_storage", "share_renewable"])
-        .round(2)
         .reset_index()
     )
+    print(df.groupby("share_storage").share_renewable.count())
+    return df
 
 
 def plot_heatmap(df_plot: pd.DataFrame, variable: str = "cost") -> go.Figure:
@@ -55,8 +55,8 @@ def plot_heatmap(df_plot: pd.DataFrame, variable: str = "cost") -> go.Figure:
     )
     fig = px.imshow(
         df.values,
-        x=[i*100 for i in df.columns],
-        y=[i*100 for i in df.index],
+        x=[i * 100 for i in df.columns],
+        y=[i * 100 for i in df.index],
         labels=dict(
             x="Renewable share [%]",
             y="Storage size [% of total demand]",
@@ -65,7 +65,7 @@ def plot_heatmap(df_plot: pd.DataFrame, variable: str = "cost") -> go.Figure:
         aspect="auto",
     )
     fig.update_layout(
-        xaxis=dict(tickmode="array", tickvals=[i*100 for i in df.columns]),
-        yaxis=dict(tickmode="array", tickvals=[i*100 for i in df.index]),
+        xaxis=dict(tickmode="array", tickvals=[i * 100 for i in df.columns]),
+        yaxis=dict(tickmode="array", tickvals=[i * 100 for i in df.index]),
     )
     return fig

@@ -9,6 +9,7 @@ def dashboard(fn_results: str = None):
     Args:
         fn_results: path to file with results
     """
+    # st.set_page_config(layout="wide")
     st.title("Simulations for the Baseload Paper")
     with st.sidebar:
         st.subheader("Set cost inputs")
@@ -57,6 +58,7 @@ def dashboard(fn_results: str = None):
 
     if os.path.isfile(fn_results):
         df_annual = get_total_results(fn_results)
+        st.subheader(f"Total demand: {df_annual['demand'].unique()[0]} MWh")
         share_generation = st.select_slider(
             "Generation as multiple of demand",
             df_annual["share_generation"].round(3).unique(),
@@ -64,7 +66,14 @@ def dashboard(fn_results: str = None):
         )
         variable = st.selectbox(
             "Variable to plot",
-            ("cost", "energyNotServed", "curtailRenewable", "curtailNuclear"),
+            (
+                "cost",
+                "energyNotServed",
+                "curtailRenewablePercent",
+                "curtailNuclearPercent",
+                "curtailRenewable",
+                "curtailNuclear",
+            ),
         )
         df_cost = get_plot_variable(
             df_annual=df_annual,
@@ -73,10 +82,10 @@ def dashboard(fn_results: str = None):
             cost_sto=cost_sto,
             cost_ens=cost_ens,
             share_generation=share_generation,
-            curtail_res_first=curtail_res_first
+            curtail_res_first=curtail_res_first,
         )
         fig = plot_heatmap(df_plot=df_cost, variable=variable)
         st.plotly_chart(fig, use_container_width=True)
-        st.dataframe(df_cost.set_index(["share_renewable", "share_storage"]))
+        st.dataframe(df_cost.style.format("{:.4}"), use_container_width=True)
     else:
         st.write("No input data found. Upload new data.")

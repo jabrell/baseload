@@ -231,6 +231,7 @@ def simulate(
         for s_gen in share_generation:
             print(f"\t---- Simulations for generation share: {s_gen}")
             for s_sto in share_storage:
+                print(f"\t---- Simulations for storage share: {s_sto}")
                 for c_cur in cost_curtailment:
                     gdx = create_inputs(
                         df_entsoe,
