@@ -73,6 +73,7 @@ def dashboard(fn_results: str = None):
             cost_sto=cost_sto,
             cost_ens=cost_ens,
             share_generation=share_generation,
+            curtail_res_first=curtail_res_first
         )
         fig = plot_heatmap(df_plot=df_cost, variable=variable)
         st.plotly_chart(fig, use_container_width=True)

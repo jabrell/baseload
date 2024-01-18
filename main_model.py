@@ -1,15 +1,16 @@
 from model import simulate
 import time
+import numpy as np
 
 if __name__ == "__main__":
     start = time.time()
     df = simulate(
-        share_generation=[1 + i / 10 for i in range(0, 6)],
-        share_renewable=[0 + i / 10 for i in range(0, 11)],
-        share_storage=[0 + i / 50 for i in range(0, 11)],
+        share_generation=np.arange(1, 1.2, 0.05),
+        share_renewable=np.arange(0, 1.1, 0.1),
+        share_storage=np.arange(0, 0.00006, 0.00001),
         cost_curtailment=[
             {"nuclear": 1, "renewable": 0},
-            {"nuclear": 0, "renewable": 1},
+            {"nuclear": 0, "renewable": 1}
         ],
         total_demand=100,
         fn_out="./data/results.parquet",

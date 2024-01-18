@@ -28,13 +28,12 @@ class GamsModel:
     def __init__(
         self,
         working_directory: str | None = None,
-        database: Optional[gams.GamsDatabase] = None,
         checkpoint: Optional[gams.GamsCheckpoint] = None,
         options: dict[str, Any] = {},
         files: Optional[list[str]] = None,
+        database: Optional[gams.GamsDatabase] = None
     ):
         """
-
         Args:
             working_directory: If no directory is provided working_directory is
                 used to create the workspace
@@ -46,8 +45,8 @@ class GamsModel:
                 file will be used
         """
         self.workspace = self.create_workspace(working_directory=working_directory)
-        self.database = database
         self.checkpoint = checkpoint
+        self.database = database
         # add options to gams
         self.options = self.workspace.add_options()
         for k, v in options.items():

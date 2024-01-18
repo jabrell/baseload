@@ -12,9 +12,19 @@ def get_plot_variable(
     share_generation: float,
     curtail_res_first=True,
 ) -> pd.DataFrame:
-    """Get data for plotting depending and calculate cost"""
+    """Get data for plotting depending and calculate cost
+    Args:
+        df_annual: results aggregated over the whole time horizon
+        cost_res: cost to install renewable generation [Euro/MWh]
+        cost_nuc: cost to install nuclear generation [Euro/MWh]
+        cost_res: cost to install storage facility [Euro/MWh]
+        cost_res: cost to install energy not served [Euro/MWh]
+        share_generation: total generation as multiple of demand
+        curtail_res_first: indicator whether renewable are curtailed first
+    """
     return (
-        df_annual.query(f"share_generation == {share_generation}")
+        df_annual
+        .query(f"share_generation == {share_generation}")
         .query(f"curtailRenewableFirst == {curtail_res_first}")
         .assign(
             cost=lambda df: (
@@ -25,7 +35,10 @@ def get_plot_variable(
             )
         )
         .drop(["curtailRenewableFirst", "share_generation"], axis=1)
-    ).round(1)
+        .set_index(["share_storage", "share_renewable"])
+        .round(2)
+        .reset_index()
+    )
 
 
 def plot_heatmap(df_plot: pd.DataFrame, variable: str = "cost") -> go.Figure:
@@ -42,8 +55,8 @@ def plot_heatmap(df_plot: pd.DataFrame, variable: str = "cost") -> go.Figure:
     )
     fig = px.imshow(
         df.values,
-        x=df.columns,
-        y=df.index,
+        x=[i*100 for i in df.columns],
+        y=[i*100 for i in df.index],
         labels=dict(
             x="Renewable share [%]",
             y="Storage size [% of total demand]",
@@ -52,7 +65,7 @@ def plot_heatmap(df_plot: pd.DataFrame, variable: str = "cost") -> go.Figure:
         aspect="auto",
     )
     fig.update_layout(
-        xaxis=dict(tickmode="array", tickvals=df.columns),
-        yaxis=dict(tickmode="array", tickvals=df.index),
+        xaxis=dict(tickmode="array", tickvals=[i*100 for i in df.columns]),
+        yaxis=dict(tickmode="array", tickvals=[i*100 for i in df.index]),
     )
     return fig

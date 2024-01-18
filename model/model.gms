@@ -1,4 +1,4 @@
-*$if not set data $set data "../text.gdx"
+$if not set data $set data "../test.gdx"
 
 Set
     i   generation technologies
@@ -46,10 +46,10 @@ Equations
     lom_STO(s,t)    stoarge accounting [MWh]
 ;
 
-
 obj..
-    COST                    =E= sum(t, ENS(t)
-                                + sum(i, cost_curtailment(i)*(alpha(i,t)*agen(i) - GEN(i,t)))
+    COST                    =E= sum(t,
+                                    ENS(t)
+                                    + sum(i, cost_curtailment(i)*(alpha(i,t)*agen(i) - GEN(i,t)))
                                 )
 ;
 

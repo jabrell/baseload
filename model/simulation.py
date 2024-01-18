@@ -240,7 +240,7 @@ def simulate(
                         cost_curtailment=c_cur,
                         total_demand=total_demand,
                     )
-                    model = GamsModel(database=gdx)
+                    model = GamsModel()
                     model.add_database(container=gdx, in_model_name="data")
                     try:
                         sol = model.run(output=None)
