@@ -40,7 +40,6 @@ def profile_dashboard(fn_profiles: str = None):
 
     # side bar
     with st.sidebar:
-        show_hourly_profiles = st.toggle("Enable hourly profile tab")
         st.subheader("Basic data")
         st.markdown("Country and year for profiles")
         col1, col2 = st.columns(2)
@@ -69,7 +68,6 @@ def profile_dashboard(fn_profiles: str = None):
         shares={"Wind": sh_wind, "Solar": sh_solar, "Baseload": sh_base},
         total_demand=total_demand,
     )
-    profiles = get_profiles(df_norm)
     df_storage, df_storage_stats = get_storage_stats(df_norm)
 
     # Tab with daily generation
@@ -89,20 +87,18 @@ def profile_dashboard(fn_profiles: str = None):
 
     # tab with average profiles
     with tabProfile:
-        if show_hourly_profiles:
-            st.text("test")
-        else:
-            st.text("test")
-        all_profiles = [
-            "Hourly: Year",
-            "Monthly",
-            "Hourly: Winter",
-            "Hourly: Spring",
-            "Hourly: Summer",
-            "Hourly: Autumn",
-        ]
-        cells = [x for xs in make_grid(3, 2) for x in xs]
-        for i, profile in enumerate(all_profiles):
-            fig = plot_profile(profiles[profile], title=profile)
-            with cells[i]:
-                st.plotly_chart(fig, use_container_width=True)
+        if st.toggle("Show hourly profiles"):
+            profiles = get_profiles(df_norm)
+            all_profiles = [
+                "Hourly: Year",
+                "Monthly",
+                "Hourly: Winter",
+                "Hourly: Spring",
+                "Hourly: Summer",
+                "Hourly: Autumn",
+            ]
+            cells = [x for xs in make_grid(3, 2) for x in xs]
+            for i, profile in enumerate(all_profiles):
+                fig = plot_profile(profiles[profile], title=profile)
+                with cells[i]:
+                    st.plotly_chart(fig, use_container_width=True)
