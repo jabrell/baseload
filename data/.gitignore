@@ -1,1 +1,2 @@
 *.parquet
+!renewables_with_load.parquet

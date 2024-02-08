@@ -110,3 +110,90 @@ def get_total_results(fn_results: str) -> pd.DataFrame:
         * 100,
     )
     return df_annual.fillna(0)
+
+
+def get_profiles(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """Get profile by hour and month
+
+    Args:
+        df: dataframe with hourly data
+    """
+    res = {
+        "Hourly: Year": df.groupby(lambda x: x.hour)
+        .mean()
+        .rename_axis(index={"dateTime": "Hour"}),
+        "Monthly": df.groupby(lambda x: x.month)
+        .mean()
+        .rename_axis(index={"dateTime": "Month"}),
+        "Hourly: Spring": df[df.index.month.isin([3, 4, 5])]
+        .groupby(lambda x: x.hour)
+        .mean()
+        .rename_axis(index={"dateTime": "Hour"}),
+        "Hourly: Summer": df[df.index.month.isin([6, 7, 8])]
+        .groupby(lambda x: x.hour)
+        .mean()
+        .rename_axis(index={"dateTime": "Hour"}),
+        "Hourly: Autumn": df[df.index.month.isin([9, 10, 11])]
+        .groupby(lambda x: x.hour)
+        .mean()
+        .rename_axis(index={"dateTime": "Hour"}),
+        "Hourly: Winter": df[df.index.month.isin([1, 2, 12])]
+        .groupby(lambda x: x.hour)
+        .mean()
+        .rename_axis(index={"dateTime": "Hour"}),
+    }
+    return res
+
+
+def normalize_generation(
+    df: pd.DataFrame,
+    shares: dict[str, float],
+    total_demand: float = 0,
+) -> pd.DataFrame:
+    """Normalize data to a given value of annual demand. Generation of
+       renewable generation is scaled to meet the given demand share on an
+       annual basis. In addition, a baseload technology is added with an
+       constant annual profile
+
+    Args:
+        df: Dataframe with observed demand and generation data
+        shares: shares of each technology in annual demand. keys have to match
+            with columns. Exception is "Baseload" that is used to create the
+            baseload technology with constant profile
+        total_demand: Total demand over the whole time horizon to normalize demand
+            If zero, no demand scaling
+    """
+    if total_demand == 0:
+        total_demand = df["Demand"].sum()
+    # normalize data
+    df_ = (df / df.sum()).assign(Baseload=1 / len(df))
+    shares.update({"Demand": 1})
+    for tech, fac in shares.items():
+        df_[tech] = df_[tech] * total_demand * fac
+    return df_[list(shares.keys())]
+
+
+@st.cache_data
+def get_generation(fn: str, country: str, year: int) -> pd.DataFrame:
+    """Get renewable generation and demand by country and year
+
+    Args:
+        fn: name of parquet file
+        country: 2-letter country code
+        year: year for data
+    """
+    df = (
+        pd.read_parquet(
+            fn,
+            filters=[
+                ("country", "==", country),
+                ("dateTime", ">=", pd.to_datetime(f"{year}/01/01 00:00")),
+                ("dateTime", "<=", pd.to_datetime(f"{year}/12/31 23:00")),
+            ],
+        )
+        .set_index("dateTime")
+        .drop("country", axis=1)
+    )
+    df.columns = [c[:1].capitalize() + c[1:] for c in df.columns]
+    df["Wind"] = df["WindOffshore"].fillna(0) + df["WindOnshore"].fillna(0)
+    return df
