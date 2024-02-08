@@ -77,6 +77,8 @@ def profile_dashboard(fn_profiles: str = None):
     # Tab with daily generation
     with tabDaily:
         st.markdown("""## Daily Generation and Demand""")
+        st.markdown("""**Overview Imbalances**""")
+        st.dataframe(df_storage_stats.T)
         col1, col2 = st.columns([1, 3])
         with col2:
             percent_daily_demand = st.toggle("Show as percent of daily demand")
@@ -86,8 +88,6 @@ def profile_dashboard(fn_profiles: str = None):
             df_norm, days=days, percent_daily_demand=percent_daily_demand
         )
         st.plotly_chart(fig, use_container_width=True)
-        st.markdown("""**Overview Imbalances**""")
-        st.dataframe(df_storage_stats.T)
 
     # tab with average profiles
     with tabProfile:
