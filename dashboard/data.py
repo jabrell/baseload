@@ -217,7 +217,7 @@ def get_storage_stats(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
         ExcessSupply=lambda df: df["TotalSupply"] - df["Demand"],
         Curtailment=lambda df: (df["ExcessSupply"] > 0).astype("int")
         * df["ExcessSupply"],
-        LostLoad=lambda df: (-1)
+        Flexible=lambda df: (-1)
         * (df["ExcessSupply"] < 0).astype("int")
         * df["ExcessSupply"],
     )
@@ -230,6 +230,6 @@ def get_storage_stats(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
             # "MaxPercent": df_.loc[df_[var].idxmax(), var]/df_.loc[df_[var].idxmax(), "Demand"]*100,
             "Hours": len(df_[df_[var] > 9]),
         }
-        for var in ["Curtailment", "LostLoad"]
+        for var in ["Curtailment", "Flexible"]
     }
     return df_, pd.DataFrame.from_dict(stats).round(1)
