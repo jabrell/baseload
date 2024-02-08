@@ -89,6 +89,10 @@ def profile_dashboard(fn_profiles: str = None):
 
     # tab with average profiles
     with tabProfile:
+        if show_hourly_profiles:
+            st.text("test")
+        else:
+            st.text("test")
         all_profiles = [
             "Hourly: Year",
             "Monthly",
