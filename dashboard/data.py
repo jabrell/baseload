@@ -112,6 +112,7 @@ def get_total_results(fn_results: str) -> pd.DataFrame:
     return df_annual.fillna(0)
 
 
+@st.cache_data
 def get_profiles(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
     """Get profile by hour and month
 
@@ -145,34 +146,7 @@ def get_profiles(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
     return res
 
 
-def normalize_generation(
-    df: pd.DataFrame,
-    shares: dict[str, float],
-    total_demand: float = 0,
-) -> pd.DataFrame:
-    """Normalize data to a given value of annual demand. Generation of
-       renewable generation is scaled to meet the given demand share on an
-       annual basis. In addition, a baseload technology is added with an
-       constant annual profile
-
-    Args:
-        df: Dataframe with observed demand and generation data
-        shares: shares of each technology in annual demand. keys have to match
-            with columns. Exception is "Baseload" that is used to create the
-            baseload technology with constant profile
-        total_demand: Total demand over the whole time horizon to normalize demand
-            If zero, no demand scaling
-    """
-    if total_demand == 0:
-        total_demand = df["Demand"].sum()
-    # normalize data
-    df_ = (df / df.sum()).assign(Baseload=1 / len(df))
-    shares.update({"Demand": 1})
-    for tech, fac in shares.items():
-        df_[tech] = df_[tech] * total_demand * fac
-    return df_[list(shares.keys())]
-
-
+@st.cache_data
 def normalize_generation(
     df: pd.DataFrame,
     shares: dict[str, float],
@@ -227,6 +201,7 @@ def get_generation(fn: str, country: str, year: int) -> pd.DataFrame:
     return df
 
 
+@st.cache_data
 def get_storage_stats(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
     """Get curtailment and energy overshoot given the frame of generation
 
