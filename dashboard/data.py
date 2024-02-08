@@ -173,6 +173,34 @@ def normalize_generation(
     return df_[list(shares.keys())]
 
 
+def normalize_generation(
+    df: pd.DataFrame,
+    shares: dict[str, float],
+    total_demand: float = 0,
+) -> pd.DataFrame:
+    """Normalize data to a given value of annual demand. Generation of
+       renewable generation is scaled to meet the given demand share on an
+       annual basis. In addition, a baseload technology is added with an
+       constant annual profile
+
+    Args:
+        df: Dataframe with observed demand and generation data
+        shares: shares of each technology in annual demand. keys have to match
+            with columns. Exception is "Baseload" that is used to create the
+            baseload technology with constant profile
+        total_demand: Total demand over the whole time horizon to normalize demand
+            If zero, no demand scaling
+    """
+    if total_demand == 0:
+        total_demand = df["Demand"].sum()
+    # normalize data
+    df_ = (df / df.sum()).assign(Baseload=1 / len(df))
+    shares.update({"Demand": 1})
+    for tech, fac in shares.items():
+        df_[tech] = df_[tech] * total_demand * fac
+    return df_[list(shares.keys())]
+
+
 @st.cache_data
 def get_generation(fn: str, country: str, year: int) -> pd.DataFrame:
     """Get renewable generation and demand by country and year
@@ -197,3 +225,36 @@ def get_generation(fn: str, country: str, year: int) -> pd.DataFrame:
     df.columns = [c[:1].capitalize() + c[1:] for c in df.columns]
     df["Wind"] = df["WindOffshore"].fillna(0) + df["WindOnshore"].fillna(0)
     return df
+
+
+def get_storage_stats(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+    """Get curtailment and energy overshoot given the frame of generation
+
+    Args:
+        df: frame with hourly generation and demand data
+
+    Returns:
+        hourly dataframe with storage statistics; aggregated statistics
+    """
+    col_gen = [c for c in df.columns if c != "Demand"]
+    df_ = df.assign(
+        TotalSupply=lambda df: df[col_gen].sum(1),
+        ExcessSupply=lambda df: df["TotalSupply"] - df["Demand"],
+        Curtailment=lambda df: (df["ExcessSupply"] > 0).astype("int")
+        * df["ExcessSupply"],
+        LostLoad=lambda df: (-1)
+        * (df["ExcessSupply"] < 0).astype("int")
+        * df["ExcessSupply"],
+    )
+    total = df_.sum()
+    stats = {
+        var: {
+            "Total": total[var],
+            "TotalPercentOfDemand": total[var] / total["Demand"] * 100,
+            "Max": df_[var].max(),
+            # "MaxPercent": df_.loc[df_[var].idxmax(), var]/df_.loc[df_[var].idxmax(), "Demand"]*100,
+            "Hours": len(df_[df_[var] > 9]),
+        }
+        for var in ["Curtailment", "LostLoad"]
+    }
+    return df_, pd.DataFrame.from_dict(stats).round(1)

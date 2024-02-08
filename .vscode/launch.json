@@ -5,8 +5,15 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Dashboard",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "run_dashboard.py",
+      "console": "integratedTerminal"
+    },
+    {
       "name": "Python: Current File",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "main_model.py",
       "console": "integratedTerminal",

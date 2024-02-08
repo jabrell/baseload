@@ -96,7 +96,7 @@ def plot_profile(
     # staple the profiles
     if tech_order is not None:
         base = pd.Series(0, index=df_p.index)
-        for t in tech_order[1:]:
+        for t in tech_order:
             if t in df_p.columns:
                 base += df_p[t]
                 df_p[t] = base
@@ -114,10 +114,79 @@ def plot_profile(
         )
         fig.update_layout(
             legend=dict(
-                yanchor="bottom", y=-0.3, xanchor="left", x=0.3, orientation="h"
+                yanchor="bottom", y=-0.3, xanchor="left", x=0.2, orientation="h"
             ),
-            yaxis=dict(title="Energy"),
+            yaxis=dict(title="Energy [MWh]", rangemode="tozero"),
             xaxis=dict(title=df_p.index.name),
-            title=dict(text=title, xanchor="center", yanchor="top", x=0.4),
+            title=dict(text=title, xanchor="center", yanchor="top", x=0.45),
         )
+    return fig
+
+
+def plot_daily_generation(
+    df: pd.DataFrame,
+    days: int = 1,
+    tech_order: list[str] | None = None,
+    colors: dict[str, str] | None = None,
+    percent_daily_demand: bool = False,
+):
+    """Plot generation by daily sums
+
+    Args:
+        df: dataframe with generation and demand in hourly frequency
+        days: number of days to aggregate
+        tech_order: order of technologies in plot
+        colors: colors of items in plot
+        percent_daily_demand: if true express values as
+            percent of daily demand
+    """
+    # default settings
+    tech_order = ["Baseload", "Wind", "Solar"] if tech_order is None else tech_order
+    colors = (
+        {"Demand": "Red", "Wind": "Green", "Solar": "Orange", "Baseload": "Black"}
+        if colors is None
+        else colors
+    )
+
+    # resample to daily
+    df_daily = df.resample(f"{days}D").sum()
+    if percent_daily_demand:
+        df_daily = df_daily.div(df_daily["Demand"], axis=0) * 100
+        ytitle = "Share in daily demand [%]"
+    else:
+        ytitle = "Energy [MWh]"
+
+    # create figure
+    fig = go.Figure()
+    traces = [
+        go.Scatter(
+            x=df_daily.index,
+            y=df_daily[c],
+            stackgroup="one",
+            mode="lines",
+            name=c,
+            line=dict(width=0.5, color=colors[c]),
+        )
+        for c in tech_order
+        if c in df_daily.columns
+    ]
+    traces.append(
+        go.Scatter(
+            x=df_daily.index,
+            y=df_daily["Demand"],
+            mode="lines",
+            name="Demand",
+            line=dict(width=1, color=colors["Demand"]),
+        )
+    )
+    fig.add_traces(traces)
+    fig.update_layout(
+        yaxis=dict(title=ytitle, rangemode="tozero"),
+        margin=go.layout.Margin(
+            l=0,  # left margin
+            r=0,  # right margin
+            b=0,  # bottom margin
+            t=0,  # top margin
+        ),
+    )
     return fig
