@@ -88,18 +88,17 @@ def profile_dashboard(fn_profiles: str = None):
         st.dataframe(df_storage_stats.T)
 
     # tab with average profiles
-    if show_hourly_profiles:
-        with tabProfile:
-            all_profiles = [
-                "Hourly: Year",
-                "Monthly",
-                "Hourly: Winter",
-                "Hourly: Spring",
-                "Hourly: Summer",
-                "Hourly: Autumn",
-            ]
-            cells = [x for xs in make_grid(3, 2) for x in xs]
-            for i, profile in enumerate(all_profiles):
-                fig = plot_profile(profiles[profile], title=profile)
-                with cells[i]:
-                    st.plotly_chart(fig, use_container_width=True)
+    with tabProfile:
+        all_profiles = [
+            "Hourly: Year",
+            "Monthly",
+            "Hourly: Winter",
+            "Hourly: Spring",
+            "Hourly: Summer",
+            "Hourly: Autumn",
+        ]
+        cells = [x for xs in make_grid(3, 2) for x in xs]
+        for i, profile in enumerate(all_profiles):
+            fig = plot_profile(profiles[profile], title=profile)
+            with cells[i]:
+                st.plotly_chart(fig, use_container_width=True)
