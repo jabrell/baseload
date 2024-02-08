@@ -50,7 +50,8 @@ def profile_dashboard(fn_profiles: str = None):
                 index=all_countries.index("DE"),
             )
         with col2:
-            year = st.selectbox("Year", list(range(2015, 2024)), index=0)
+            years = list(range(2015, 2024))
+            year = st.selectbox("Year", list(range(2015, 2024)), index=len(years))
         total_demand = st.number_input("Scale annual demand to (0 for no scaling)", 0)
 
         st.subheader("Supply configuration")
