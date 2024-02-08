@@ -41,7 +41,6 @@ def profile_dashboard(fn_profiles: str = None):
     # side bar
     with st.sidebar:
         st.subheader("Basic data")
-        st.markdown("Country and year for profiles")
         col1, col2 = st.columns(2)
         with col1:
             country = st.selectbox(
@@ -53,11 +52,16 @@ def profile_dashboard(fn_profiles: str = None):
             years = list(range(2015, 2024))
             year = st.selectbox("Year", list(range(2015, 2024)), index=(len(years) - 1))
         total_demand = st.number_input("Scale annual demand to (0 for no scaling)", 0)
+        st.divider()
 
-        st.subheader("Supply configuration")
-        sh_wind = st.slider("Share wind in total demand", 0, 120, 30) / 100
-        sh_solar = st.slider("Share solar in total demand", 0, 120, 30) / 100
-        sh_base = st.slider("Share baseload in total demand", 0, 120, 30) / 100
+        st.subheader("Supply shares")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            sh_wind = st.number_input("Wind", 0, 120, 60, step=5) / 100
+        with col2:
+            sh_solar = st.number_input("Solar", 0, 120, 20, step=5) / 100
+        with col3:
+            sh_base = st.number_input("Baseload", 0, 120, 20, step=5) / 100
         st.markdown(
             f"**Share of total supply in demand: {round((sh_base + sh_solar + sh_wind)*100,0)}%**"
         )
