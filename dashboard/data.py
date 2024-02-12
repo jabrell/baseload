@@ -202,7 +202,7 @@ def get_generation(fn: str, country: str, year: int) -> pd.DataFrame:
 
 
 @st.cache_data
-def get_storage_stats(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+def get_storage_stats(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Get curtailment and energy overshoot given the frame of generation
 
     Args:
@@ -214,12 +214,12 @@ def get_storage_stats(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
     col_gen = [c for c in df.columns if c != "Demand"]
     df_ = df.assign(
         TotalSupply=lambda df: df[col_gen].sum(1),
-        ExcessSupply=lambda df: df["TotalSupply"] - df["Demand"],
-        Curtailment=lambda df: (df["ExcessSupply"] > 0).astype("int")
-        * df["ExcessSupply"],
-        Flexible=lambda df: (-1)
-        * (df["ExcessSupply"] < 0).astype("int")
-        * df["ExcessSupply"],
+        ExcessSupply=lambda df: (df["TotalSupply"] - df["Demand"]).map(
+            lambda x: max(x, 0)
+        ),
+        ExcessDemand=lambda df: (df["Demand"] - df["TotalSupply"]).map(
+            lambda x: max(x, 0)
+        ),
     )
     total = df_.sum()
     stats = {
@@ -227,9 +227,8 @@ def get_storage_stats(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
             "Total": total[var],
             "TotalPercentOfDemand": total[var] / total["Demand"] * 100,
             "Max": df_[var].max(),
-            # "MaxPercent": df_.loc[df_[var].idxmax(), var]/df_.loc[df_[var].idxmax(), "Demand"]*100,
             "Hours": len(df_[df_[var] > 9]),
         }
-        for var in ["Curtailment", "Flexible"]
+        for var in ["ExcessSupply", "ExcessDemand"]
     }
     return df_, pd.DataFrame.from_dict(stats).round(1)
