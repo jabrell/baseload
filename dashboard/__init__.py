@@ -1,2 +1,2 @@
-from .dashboard import dashboard
-from .profiles import profile_dashboard
+from .dashboard_model_results import dashboard
+from .dashboard import profile_dashboard

@@ -1,2 +1,3 @@
 *.parquet
 !renewables_with_load.parquet
+!renewables_capacity.parquet

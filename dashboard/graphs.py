@@ -72,27 +72,20 @@ def plot_heatmap(df_plot: pd.DataFrame, variable: str = "cost") -> go.Figure:
 
 def plot_profile(
     df_p: pd.DataFrame,
+    colors: dict[str, str],
     title: str = "",
     tech_order: list[str] | None = None,
-    colors: dict[str, str] | None = None,
 ):
     """Plot profiles
 
     Args:
         df_p: dataframe with profiles in columns and x-axis as index
+        colors: color setting for profiles. Maps column name to display color
+            if a column is not used as key, it will not be shown
         title: title for the plot
-        tech_order: order of technologies for stapling. If none, technologies are
-            not stapled
-        colors: color setting for profiles
+        tech_order: order of technologies for stapling.
+        stack_profiles: indicator to stack profiles in the order provided by tech_order
     """
-    # set default arguments
-    tech_order = ["Baseload", "Wind", "Solar"] if tech_order is None else tech_order
-    colors = (
-        {"Demand": "Red", "Wind": "Green", "Solar": "Orange", "Baseload": "Black"}
-        if colors is None
-        else colors
-    )
-
     # staple the profiles
     if tech_order is not None:
         base = pd.Series(0, index=df_p.index)
@@ -102,7 +95,7 @@ def plot_profile(
                 df_p[t] = base
     # create figure
     fig = go.Figure()
-    for c in df_p.columns:
+    for c in colors.keys():
         fig.add_trace(
             go.Scatter(
                 x=df_p.index,

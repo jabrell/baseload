@@ -176,13 +176,19 @@ def normalize_generation(
 
 
 @st.cache_data
-def get_generation(fn: str, country: str, year: int) -> pd.DataFrame:
-    """Get renewable generation and demand by country and year
+def get_generation(
+    fn: str, fn_cap: str, country: str, year: int
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Get renewable generation and demand together with capacity by country and year
 
     Args:
         fn: name of parquet file
+        fn_cap: name of parquet file with capacity
         country: 2-letter country code
         year: year for data
+
+    Returns:
+        Hourly renewable generation, annual aggregate
     """
     df = (
         pd.read_parquet(
@@ -198,7 +204,23 @@ def get_generation(fn: str, country: str, year: int) -> pd.DataFrame:
     )
     df.columns = [c[:1].capitalize() + c[1:] for c in df.columns]
     df["Wind"] = df["WindOffshore"].fillna(0) + df["WindOnshore"].fillna(0)
-    return df
+
+    # get capacity
+    df_cap = pd.read_parquet(
+        fn_cap,
+        filters=[("country", "==", country), ("year", "==", year)],
+    ).drop(["country", "year"], axis=1)
+    df_cap = (
+        df_cap.rename(columns={c: c[:1].capitalize() + c[1:] for c in df_cap.columns})
+        .assign(
+            Wind=lambda df: df["WindOffshore"].fillna(0) + df["WindOnshore"].fillna(0)
+        )
+        .set_axis(["Capacity"])
+    )
+    df_cap = pd.concat([df_cap, df.sum().to_frame("AnnualGeneration").T]).T.assign(
+        **{"Fullload Hours": lambda df: df["AnnualGeneration"] / df["Capacity"]}
+    )
+    return df, df_cap
 
 
 @st.cache_data
