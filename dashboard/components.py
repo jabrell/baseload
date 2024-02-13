@@ -22,6 +22,10 @@ def sidebar(
     all_countries = list(
         pd.read_parquet(fn_cap, columns=["country"])["country"].sort_values().unique()
     )
+    sh_wind = None
+    sh_base = None
+    sh_solar = None
+
     with st.sidebar:
         col1, col2 = st.columns(2)
         with col1:
@@ -65,24 +69,26 @@ def sidebar(
         )
 
         st.markdown("**Set demand shares**")
-        df_w = (
-            int(df_annual.at["Wind", "DemandShare"])
-            if ~np.isnan(df_annual.at["Wind", "DemandShare"])
-            else 0
-        )
-        df_s = (
-            int(df_annual.at["Solar", "DemandShare"])
-            if ~np.isnan(df_annual.at["Solar", "DemandShare"])
-            else 0
-        )
-        df_b = max(100 - df_w - df_s, 0)
+        # if not previous values use empirical ones
+        if sh_base is None:
+            sh_w = (
+                int(df_annual.at["Wind", "DemandShare"])
+                if ~np.isnan(df_annual.at["Wind", "DemandShare"])
+                else 0
+            )
+            sh_s = (
+                int(df_annual.at["Solar", "DemandShare"])
+                if ~np.isnan(df_annual.at["Solar", "DemandShare"])
+                else 0
+            )
+            sh_b = max(100 - sh_w - sh_s, 0)
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            sh_wind = st.number_input("Wind", 0, 120, df_w, step=5) / 100
+            sh_wind = st.number_input("Wind", 0, 120, sh_w, step=5) / 100
         with col2:
-            sh_solar = st.number_input("Solar", 0, 120, df_s, step=5) / 100
+            sh_solar = st.number_input("Solar", 0, 120, sh_s, step=5) / 100
         with col3:
-            sh_base = st.number_input("Baseload", 0, 120, df_b, step=5) / 100
+            sh_base = st.number_input("Baseload", 0, 120, sh_b, step=5) / 100
         with col4:
             total = int((sh_base + sh_solar + sh_wind) * 100)
             st.number_input("Total", total, total, total)

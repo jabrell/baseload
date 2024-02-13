@@ -1,6 +1,4 @@
-from typing import Any
 import streamlit as st
-import pandas as pd
 from .data import get_profiles
 from .graphs import plot_profile, plot_daily_generation
 from .components import sidebar
