@@ -68,7 +68,7 @@ def sidebar(
         st.markdown("**Set demand shares**")
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            sh_wind = st.number_input("Wind", 0, 120, 40, step=5) / 100
+            sh_wind = st.number_input("Wind", 0, 120, 50, step=5) / 100
         with col2:
             sh_solar = st.number_input("Solar", 0, 120, 30, step=5) / 100
         with col3:
