@@ -140,7 +140,9 @@ def plot_daily_generation(
         if colors is None
         else colors
     )
-
+    # if dataframe is empty return empty figure
+    if len(df) == 0:
+        return go.Figure()
     # resample to daily
     df_daily = df.resample(f"{days}D").sum()
     if percent_daily_demand:

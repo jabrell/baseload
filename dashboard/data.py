@@ -168,7 +168,10 @@ def normalize_generation(
     if total_demand == 0:
         total_demand = df["Demand"].sum()
     # normalize data
-    df_ = (df / df.sum()).assign(Baseload=1 / len(df))
+    if len(df) > 0:
+        df_ = (df / df.sum()).assign(Baseload=1 / len(df))
+    else:
+        df_ = pd.DataFrame(columns=["Wind", "Solar", "Baseload", "Demand"])
     shares.update({"Demand": 1})
     for tech, fac in shares.items():
         df_[tech] = df_[tech] * total_demand * fac
@@ -177,12 +180,12 @@ def normalize_generation(
 
 @st.cache_data
 def get_generation(
-    fn: str, fn_cap: str, country: str, year: int
+    fn_gen: str, fn_cap: str, country: str, year: int
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Get renewable generation and demand together with capacity by country and year
 
     Args:
-        fn: name of parquet file
+        fn_gen: name of parquet file with generation ata
         fn_cap: name of parquet file with capacity
         country: 2-letter country code
         year: year for data
@@ -192,7 +195,7 @@ def get_generation(
     """
     df = (
         pd.read_parquet(
-            fn,
+            fn_gen,
             filters=[
                 ("country", "==", country),
                 ("dateTime", ">=", pd.to_datetime(f"{year}/01/01 00:00")),
@@ -210,6 +213,22 @@ def get_generation(
         fn_cap,
         filters=[("country", "==", country), ("year", "==", year)],
     ).drop(["country", "year"], axis=1)
+    print("!!!!!!!!!!!!!!\n\n\n", df_cap)
+    # if not data provide an empty frame
+    if len(df_cap) == 0 or df_cap is None:
+        return df, pd.DataFrame(
+            columns=[
+                "Wind",
+                "Solar",
+                "AnnualGeneration",
+                "Demand",
+                "DemandShare",
+                "Fullload Hours",
+            ],
+            index=[
+                "Capacity",
+            ],
+        )
     df_cap = (
         df_cap.rename(columns={c: c[:1].capitalize() + c[1:] for c in df_cap.columns})
         .assign(
@@ -219,6 +238,9 @@ def get_generation(
     )
     df_cap = pd.concat([df_cap, df.sum().to_frame("AnnualGeneration").T]).T.assign(
         **{"Fullload Hours": lambda df: df["AnnualGeneration"] / df["Capacity"]}
+    )
+    df_cap["DemandShare"] = (
+        100 * df_cap["AnnualGeneration"] / df_cap.loc["Demand", "AnnualGeneration"]
     )
     return df, df_cap
 
@@ -247,7 +269,9 @@ def get_storage_stats(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     stats = {
         var: {
             "Total": total[var],
-            "TotalPercentOfDemand": total[var] / total["Demand"] * 100,
+            "TotalPercentOfDemand": (
+                total[var] / total["Demand"] * 100 if total["Demand"] != 0 else 0
+            ),
             "Max": df_[var].max(),
             "Hours": len(df_[df_[var] > 9]),
         }
