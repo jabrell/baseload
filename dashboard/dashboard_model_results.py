@@ -4,7 +4,7 @@ from .graphs import get_plot_variable, plot_heatmap
 import os
 
 
-def dashboard(fn_results: str = None):
+def dashboard_model(fn_results: str = None):
     """Run the dashboard
     Args:
         fn_results: path to file with results
