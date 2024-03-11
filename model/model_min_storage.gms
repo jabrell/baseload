@@ -1,5 +1,12 @@
-$if not set data $set data "../test.gdx"
+$onText
+This model version minimizes the amount of storage necessary
+to fullfill total demand. Dispatchable generation is assumed
+to be zero and ttotal generation of renewbales and baseload
+together with the production profile is exogenously provided.
+$offText
 
+$if not set data $set data "./test.gdx"
+option lp=ipopt;
 Set
     i   generation technologies
 *    /i1/
@@ -13,7 +20,6 @@ Parameter
     dem(t)              demand in time period t [MWh]
     alpha(i,t)          share of annual generation of technology i eneding up in period t
     agen(i)             annual generation of technology i
-    max_sto(s)          size storage [MWh]
     curtailment(i,t)    curtailment of technology i in period t [MW]
     lostload            total lost load [MWh]
     stats[*]            solution statistics
@@ -22,7 +28,7 @@ Parameter
 
 $gdxin %data%
 $load i s t
-$loaddc dem alpha agen max_sto cost_curtailment
+$loaddc dem alpha agen cost_curtailment
 $gdxin
 
 
@@ -34,8 +40,9 @@ Positive Variable
     GEN(i,t)        generation of technology i in period t [MW]
     STO(s,t)        storage level in period t [MWh]
     INJ(s,t)        storage injection in period t [MW]
-    REL(s,t)        storage relase in period t [MW]
-    ENS(t)          energy not served in period t
+    REL(s,t)        storage relase in period t [MW]s
+    MAX_STO         maximum amout of storage possible
+    ENS(t)          energy not served (not used in this model)
 ;
 
 Equations
@@ -47,14 +54,12 @@ Equations
 ;
 
 obj..
-    COST                    =E= sum(t,
-                                    ENS(t)
-                                    + sum(i, cost_curtailment(i)*(alpha(i,t)*agen(i) - GEN(i,t)))
-                                )
+    COST                    =E= MAX_STO
+                                + sum((t,i), cost_curtailment(i)*(alpha(i,t)*agen(i) - GEN(i,t)))
 ;
 
 mkt(t)..
-    sum(i, GEN(i,t)) + sum(s, STO(s,t)) + ENS(t)
+    sum(i, GEN(i,t)) + sum(s, STO(s,t)) 
                             =E= dem(t)
 ;
 
@@ -63,7 +68,7 @@ res_maxGEN(i,t)..
 ;
 
 res_maxSTO(s,t)..
-    max_STO(s)              =G= STO(s,t)
+    MAX_STO                 =G= STO(s,t)
 ;
 
 lom_STO(s,t)..

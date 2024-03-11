@@ -31,7 +31,7 @@ class GamsModel:
         checkpoint: Optional[gams.GamsCheckpoint] = None,
         options: dict[str, Any] = {},
         files: Optional[list[str]] = None,
-        database: Optional[gams.GamsDatabase] = None
+        database: Optional[gams.GamsDatabase] = None,
     ):
         """
         Args:
@@ -53,7 +53,9 @@ class GamsModel:
             setattr(self.options, k, v)
         # copy files into the workspace
         if files is None:
-            files = [os.path.join(os.path.dirname(__file__), "model.gms")]
+            files = [
+                os.path.join(os.path.dirname(__file__), "model_min_dispatchable.gms")
+            ]
         all_files = [
             os.path.join(self.working_directory, os.path.basename(fn)) for fn in files
         ]

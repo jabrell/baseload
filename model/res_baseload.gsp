@@ -1,17 +1,29 @@
 {
-    "file": "model.gms",
+    "file": "model_min_storage.gms",
     "name": "res_baseload",
     "nodes": [
         {
             "codecMib": 106,
-            "file": "model.gms",
-            "name": "model.gms",
+            "file": "model_min_dispatchable.gms",
+            "name": "model_min_dispatchable.gms",
             "type": "gms"
         },
         {
             "codecMib": 106,
-            "file": "model.lst",
-            "name": "model.lst",
+            "file": "model_min_dispatchable.lst",
+            "name": "model_min_dispatchable.lst",
+            "type": "lst"
+        },
+        {
+            "codecMib": 106,
+            "file": "model_min_storage.gms",
+            "name": "model_min_storage.gms",
+            "type": "gms"
+        },
+        {
+            "codecMib": 106,
+            "file": "model_min_storage.lst",
+            "name": "model_min_storage.lst",
             "type": "lst"
         },
         {
@@ -23,7 +35,9 @@
     ],
     "options": [
         "",
-        "gdx=run.gdx"
+        "gdx=run.gdx",
+        "gdx=run.gdx license=\"//wwz-jumbo.storage.p.unibas.ch/wwz-home01$/abrell/GAMS/gamslice.txt\"",
+        "gdx=run.gdx license=\"//wwz-jumbo.storage.p.unibas.ch/wwz-home01$/abrell/GAMS/gamslice_basel.txt\""
     ],
     "path": ".",
     "pf": "",

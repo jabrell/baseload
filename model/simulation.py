@@ -179,7 +179,66 @@ def extract_solution(gdx: gt.Container) -> pd.DataFrame:
     return df
 
 
-def simulate(
+def extract_solution_storage(gdx: gt.Container) -> pd.DataFrame:
+    """Extract solutions for minimum storage model
+
+    Args:
+        gdx: gdx container with solution values
+    """
+    # collect results in a single dataframe
+    df = (
+        gdx["GEN"]
+        .records.pivot_table("level", "t", "i")
+        .join(
+            gdx["REL"]
+            .records.pivot_table("level", "t", "s")
+            .join(
+                gdx["INJ"].records.pivot_table("level", "t", "s") * (-1),
+                rsuffix="in",
+                lsuffix="out",
+            )
+            .assign(netStorage=lambda df: df.sum(1))
+            .iloc[:, [-1]]
+        )
+        .join(gdx["dem"].records.set_index("t")["value"].to_frame("demand"))
+        .join(
+            gdx["STO"]
+            .records.pivot_table("level", "t", "s")
+            .rename(columns={"storage": "storageLevel"})
+        )
+        .join(
+            gdx["curtailment"]
+            .records.pivot_table("value", "t", "i")
+            .fillna(0)
+            .rename(
+                columns={"nuclear": "curtailNuclear", "renewable": "curtailRenewable"}
+            )
+        )
+    ).assign(MAX_STO=gdx["MAX_STO"].records["level"].iloc[0])
+    # ensure that all columns are in the frame even if values are zero
+    cols = ["curtailNuclear", "curtailRenewable"]
+    for c in cols:
+        if c not in df.columns:
+            df[c] = 0.0
+    # get scenario specification
+    agen = gdx["agen"].records.assign(share=lambda df: df["value"] / df["value"].sum())
+    df["share_generation"] = agen["value"].sum() / df["demand"].sum()
+    if "renewable" in agen["i"].unique():
+        df["share_renewable"] = agen.query("i == 'renewable'")["share"].iloc[0]
+    else:
+        df["share_renewable"] = 0.0
+    max_sto = gdx["MAX_STO"].records["level"].iloc[0]
+    if max_sto is None:
+        df["share_storage"] = 0.0
+    else:
+        df["share_storage"] = max_sto / df["demand"].sum()
+    cost_curtail = gdx["cost_curtailment"].records.set_index("i")["value"].to_dict()
+    df["costCurtailNuclear"] = cost_curtail.get("nuclear", 0)
+    df["costCurtailRenewable"] = cost_curtail.get("renewable", 0)
+    return df
+
+
+def simulate_min_dispatchable(
     share_generation: list[float],
     share_renewable: list[float],
     share_storage: list[float],
@@ -192,7 +251,9 @@ def simulate(
     fn_entsoe: str | None = None,
     fn_out: str | None = None,
 ):
-    """Perform simulations over a set of scenarios.
+    """Perform simulations over a set of scenarios. This set of scenarios minimizes
+    the amount of dispatchable generation given the share of renewable, storage,
+    and baseload generation (in total demand).
 
     - Total generation over the time horizon is provided as multiple of total
       demand over the whole time horizon and then allocated to nuclear and
@@ -259,6 +320,52 @@ def simulate(
                         )
                         continue
                     lst_df.append(extract_solution(sol))
+    df = (
+        pd.concat(lst_df)
+        .reset_index()
+        .assign(date=lambda df: pd.to_datetime(df["t"]))
+        .drop("t", axis=1)
+    )
+    if fn_out is not None:
+        df.to_parquet(fn_out, index=False)
+    return df
+
+
+def simulate_min_storage(
+    data: pd.DataFrame,
+    shares_renewable: list[float],
+    share_generation: float = 1,
+    fn_out: str | None = None,
+):
+    """Run the model that minimizes storage given the share of renewable
+    generation and total generation in terms of demand
+
+    Args:
+        data: Dataframe with hourly generation and demand data
+        share_renewable: share of renewable generation in total generation
+        share_generation: share of total generation in demand
+        fn_out: name of file to save results. If None, results are not saved
+    """
+    lst_df = []
+    for share_renewable in shares_renewable:
+        gdx = create_inputs(
+            data,
+            share_generation=share_generation,
+            share_renewable=share_renewable,
+            cost_curtailment={"nuclear": 1, "renewable": 0},
+        )
+        model = GamsModel(files=["./model/model_min_storage.gms"])
+        model.add_database(container=gdx, in_model_name="data")
+        try:
+            sol = model.run(output=None)
+            # check solution statistics
+            stats = sol["stats"].records.set_index("uni")["value"].to_dict()
+            assert stats["modelstat"] <= 2, f"Model did not solve correctly: {stats}"
+            assert stats["solvestat"] == 1, f"Model did not solve correctly: {stats}"
+        except:
+            print(f"Problems in solving for renewable share of {share_renewable}%")
+            continue
+        lst_df.append(extract_solution_storage(sol))
     df = (
         pd.concat(lst_df)
         .reset_index()
