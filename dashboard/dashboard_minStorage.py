@@ -15,6 +15,13 @@ def dashboard_minStorage(fn_results: str = None):
     """
     # st.set_page_config(layout="wide")
     st.title("Simulations for Baseload Paper")
+    st.markdown(
+        """There are two scenarios and both minimize the maximum amount of storage needed.
+        The optimalRE scenarios additionally optimizes the share of different renewable technologies 
+        in the *exogenously given* share of renewables in total demand.
+        All scenarios are based on the same base data. The base data can be chosen in the sidebar.
+        The renewable share varies in steps of 1% along the x axis."""
+    )
     scen_options = get_storage_scenario_options(fn_results)
 
     with st.sidebar:
@@ -68,5 +75,5 @@ def dashboard_minStorage(fn_results: str = None):
         df["scenario"].unique(),
         help="There are two scenarios. Both minimize storage. The optimalRE scenarios additionally optimizes the share of different renewable technologies",
     )
-    fig = plot_storage_results(df)
+    fig = plot_storage_results(df, scenario=scenario)
     st.plotly_chart(fig, use_container_width=True)

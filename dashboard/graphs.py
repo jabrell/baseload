@@ -240,8 +240,8 @@ def plot_cost_storage_scenarios(df: pd.DataFrame) -> go.Figure:
 
     fig.add_trace(
         go.Scatter(
-            x=df_s["share_renewable"],
-            y=df_s["cost"],
+            x=df_res["share_renewable"],
+            y=df_res["cost"],
             mode="lines",
             line=dict(color="green", dash="dash"),
             name="Cost: RE Portfolio + Storage",

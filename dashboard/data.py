@@ -291,15 +291,6 @@ def calculate_cost_storage_scenarios(
         cost: dictionary with energy cost has to include a key called
             "storage" and keys fo single technologies
     """
-    print(cost)
-    test = (
-        df.groupby(["scenario", "share_renewable"])[
-            [i for i in cost.keys() if i != "storage"]
-        ]
-        .sum()
-        .sum(1)
-    )
-    print(test)
     return (
         pd.concat(
             [
