@@ -50,7 +50,7 @@ class GamsModel:
         # add options to gams
         self.options = self.workspace.add_options()
         for k, v in options.items():
-            setattr(self.options, k, v)
+            setattr(self.options, k, str(v))
         # copy files into the workspace
         if files is None:
             files = [

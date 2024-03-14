@@ -60,7 +60,9 @@ obj..
 ;
 
 mkt(t)..
-    sum(i, GEN(i,t)) + sum(s, STO(s,t)) + ENS(t)
+here is an error and we raise to not run the model
+we need to replace the storage level by the release net of injection...
+    sum(i,GEN(i,t)) + sum(s, STO(s,t)) + ENS(t)
                             =E= dem(t)
 ;
 

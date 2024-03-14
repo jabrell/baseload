@@ -10,12 +10,6 @@
         },
         {
             "codecMib": 106,
-            "file": "model_min_dispatchable.lst",
-            "name": "model_min_dispatchable.lst",
-            "type": "lst"
-        },
-        {
-            "codecMib": 106,
             "file": "model_min_storage.gms",
             "name": "model_min_storage.gms",
             "type": "gms"
@@ -37,7 +31,9 @@
         "",
         "gdx=run.gdx",
         "gdx=run.gdx license=\"//wwz-jumbo.storage.p.unibas.ch/wwz-home01$/abrell/GAMS/gamslice.txt\"",
-        "gdx=run.gdx license=\"//wwz-jumbo.storage.p.unibas.ch/wwz-home01$/abrell/GAMS/gamslice_basel.txt\""
+        "gdx=run.gdx license=\"//wwz-jumbo.storage.p.unibas.ch/wwz-home01$/abrell/GAMS/gamslice_basel.txt\"",
+        "gdx=run.gdx license=\"C:/Users/abrel/Documents/GAMS/gamslice.txt\"",
+        "gdx=run.gdx license=\"C:/Users/abrel/Documents/GAMS/gamslice_basel.txt\""
     ],
     "path": ".",
     "pf": "",

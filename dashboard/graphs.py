@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 
 
 def get_plot_variable(
@@ -183,5 +184,119 @@ def plot_daily_generation(
             b=0,  # bottom margin
             t=0,  # top margin
         ),
+    )
+    return fig
+
+
+def plot_cost_storage_scenarios(df: pd.DataFrame) -> go.Figure:
+    """Plot cost of storage scenarios
+
+    Args:
+        df: dataframe with results
+    """
+
+    df_s = df.query(f"scenario == 'storageOnly'")[
+        ["share_renewable", "MAX_STO", "cost"]
+    ].drop_duplicates()
+
+    df_res = df.query(f"scenario == 'optimalRE'")[
+        ["share_renewable", "MAX_STO", "cost"]
+    ].drop_duplicates()
+
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_s["share_renewable"],
+            y=df_s["MAX_STO"],
+            mode="lines",
+            line=dict(color="blue"),
+            name="Storage only",
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df_res["share_renewable"],
+            y=df_res["MAX_STO"],
+            mode="lines",
+            line=dict(color="green"),
+            name="RE Portfolio + Storage",
+        ),
+        secondary_y=False,
+    )
+
+    # add the cost on the second y-axis
+    fig.add_trace(
+        go.Scatter(
+            x=df_s["share_renewable"],
+            y=df_s["cost"],
+            mode="lines",
+            line=dict(color="blue", dash="dot"),
+            name="Cost: Storage only",
+        ),
+        secondary_y=True,
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_s["share_renewable"],
+            y=df_s["cost"],
+            mode="lines",
+            line=dict(color="green", dash="dash"),
+            name="Cost: RE Portfolio + Storage",
+        ),
+        secondary_y=True,
+    )
+
+    fig.update_layout(
+        xaxis=dict(domain=[0, 1], title="Renewable Share"),
+        yaxis=dict(title="Maximum Storage [MWh]", rangemode="tozero"),
+        yaxis2=dict(title="Cost [€]", rangemode="tozero"),
+        # legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="left", x=0.2),
+    )
+
+    return fig
+
+
+def plot_storage_results(
+    df: pd.DataFrame,
+    re_levels: list[float] | None = None,
+    scenario: str = "storageOnly",
+) -> go.Figure:
+    """Plot distributions for storage level and net storage
+
+    Args:
+        df: dataframe with results
+        re_levels: renewable levels to plot
+        scenario: scenario to plot
+    """
+    if re_levels is None:
+        re_levels = [i / 10 for i in range(11)]
+
+    df_p = df.assign(share_renewable=lambda df: df["share_renewable"].round(2)).query(
+        f"share_renewable in {re_levels} and scenario == '{scenario}'"
+    )
+    fig = go.Figure(
+        data=[
+            go.Box(
+                x=df_p["share_renewable"],
+                y=df_p["storageLevel"],
+                marker_color="darkblue",
+                name="Storage Level",
+            ),
+            go.Box(
+                x=df_p["share_renewable"],
+                y=df_p["netStorage"],
+                marker_color=" limegreen",
+                name="Net Storage",
+            ),
+        ]
+    )
+    fig.update_layout(
+        title="Storage Level and Net Storage",
+        xaxis=dict(domain=[0, 1], title="Renewable Share"),
+        yaxis=dict(title="Energy [MWh]"),
+        # legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="left", x=0.2),
     )
     return fig

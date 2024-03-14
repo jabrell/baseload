@@ -278,3 +278,78 @@ def get_storage_stats(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         for var in ["ExcessSupply", "ExcessDemand"]
     }
     return df_, pd.DataFrame.from_dict(stats).round(1)
+
+
+@st.cache_data
+def calculate_cost_storage_scenarios(
+    df: pd.DataFrame, cost: dict[str:float]
+) -> pd.DataFrame:
+    """Calculate total cost for scenarios under min storage model
+
+    Args:
+        df: dataframe with results
+        cost: dictionary with energy cost has to include a key called
+            "storage" and keys fo single technologies
+    """
+    print(cost)
+    test = (
+        df.groupby(["scenario", "share_renewable"])[
+            [i for i in cost.keys() if i != "storage"]
+        ]
+        .sum()
+        .sum(1)
+    )
+    print(test)
+    return (
+        pd.concat(
+            [
+                df.groupby(["scenario", "share_renewable"])[
+                    [i for i in cost.keys() if i != "storage"]
+                ]
+                .sum()
+                .T,
+                df.groupby(["scenario", "share_renewable"])[["MAX_STO"]]
+                .mean()
+                .rename(columns={"MAX_STO": "storage"})
+                .T,
+            ]
+        )
+        .mul(pd.Series(cost), axis=0)
+        .sum()
+        .to_frame("cost")
+        .reset_index()
+    )
+
+
+@st.cache_data
+def get_storage_results(fn: str, country: str, start: str) -> pd.DataFrame:
+    """Get results from storage model
+
+    Args:
+        fn: name of file with results
+        country: country to filter
+        start: start date to filter
+    """
+    df = pd.read_parquet(
+        fn,
+        filters=[
+            ("country", "==", country),
+            ("start", "==", start),
+        ],
+    ).drop(["start", "end", "country"], axis=1)
+
+    return df
+
+
+@st.cache_data
+def get_storage_scenario_options(fn: str):
+    """Get scenario options from storage results.
+
+    Args:
+        fn (str): filename of storage results
+    """
+    df = pd.read_parquet(fn, columns=["country", "start"]).drop_duplicates()
+    return {
+        "countries": list(df["country"].unique()),
+        "start": list(df["start"].unique()),
+    }
