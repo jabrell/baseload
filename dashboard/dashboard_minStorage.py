@@ -42,7 +42,11 @@ def dashboard_minStorage(fn_results: str = None):
     with st.sidebar:
         st.subheader("Choose specification for base data")
         # select for country and start date
-        country = st.selectbox("Country", scen_options["countries"])
+        country = st.selectbox(
+            "Country",
+            scen_options["countries"],
+            index=scen_options["countries"].index("DE"),
+        )
         start = st.selectbox(
             "Start date",
             scen_options["start"],
