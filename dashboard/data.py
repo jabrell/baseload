@@ -280,7 +280,7 @@ def get_storage_stats(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return df_, pd.DataFrame.from_dict(stats).round(1)
 
 
-@st.cache_data
+@st.cache_data(max_entries=5, show_spinner="Calculating cost")
 def calculate_cost_storage_scenarios(
     df: pd.DataFrame, cost: dict[str:float]
 ) -> pd.DataFrame:
@@ -312,7 +312,7 @@ def calculate_cost_storage_scenarios(
     )
 
 
-@st.cache_data
+@st.cache_data(max_entries=2, show_spinner="Load result data")
 def get_storage_results(fn: str, country: str, start: str) -> pd.DataFrame:
     """Get results from storage model
 
@@ -332,7 +332,7 @@ def get_storage_results(fn: str, country: str, start: str) -> pd.DataFrame:
     return df
 
 
-@st.cache_data
+@st.cache_data(show_spinner="Extract scenario options")
 def get_storage_scenario_options(fn: str):
     """Get scenario options from storage results.
 

@@ -16,11 +16,26 @@ def dashboard_minStorage(fn_results: str = None):
     # st.set_page_config(layout="wide")
     st.title("Simulations for Baseload Paper")
     st.markdown(
-        """There are two scenarios and both minimize the maximum amount of storage needed.
-        The optimalRE scenarios additionally optimizes the share of different renewable technologies 
-        in the *exogenously given* share of renewables in total demand.
-        All scenarios are based on the same base data. The base data can be chosen in the sidebar.
-        The renewable share varies in steps of 1% along the x axis."""
+        """In all scenarios the maximum storage amount is minimized such that demand
+        is met. Total available generation equals total demand and comes in two form."""
+    )
+    st.markdown(
+        """1. Baseload: Generation that is available at all times, i.e., has a flat production profile."""
+    )
+
+    st.markdown(
+        """2. Renewable: Generation that is available at times when the renewable resource is available.
+                The renewable profile is derived from the observed data and combines (on- and offshore) wind with
+                solar generation."""
+    )
+    st.markdown(
+        """The share of renewable generation in total available generation is exogenously given
+                and varies in steps of 1% along the x axis."""
+    )
+    st.markdown(
+        """In the *storageOnly* scenarios, the share of wind and solar power is exogenously 
+                set to the share observed in the data. In the *optimalRE* (also RE portfolio) scenario, 
+                this share is optimally chosen."""
     )
     scen_options = get_storage_scenario_options(fn_results)
 

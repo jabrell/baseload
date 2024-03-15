@@ -293,14 +293,14 @@ def plot_storage_results(
             x=df_p["share_renewable"],
             y=df_p["netStorage"],
             marker_color=" limegreen",
-            name="Net Storage",
+            name="Net-generation",
         ),
         secondary_y=True,
     )
     fig.update_layout(
-        title="Storage Level and Net Storage",
+        title="Storage Level and Net-generation of Storage",
         xaxis=dict(domain=[0, 1], title="Renewable Share"),
         yaxis=dict(title="Storage Level [MWh]", rangemode="tozero"),
-        yaxis2=dict(title="Net Injection [MWh]"),
+        yaxis2=dict(title="Net-generation [MWh]"),
     )
     return fig

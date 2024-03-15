@@ -32,7 +32,6 @@ $gdxin %data%
 $load i s t r
 $loaddc dem alpha agen cost_curtailment agen_re sh_res optimize_res_share
 
-
 Variable
     COST            objective value
 ;
@@ -57,10 +56,10 @@ Equations
 ;
 
 obj..
-    COST                    =E= (1000*MAX_STO
+    COST                    =E= (MAX_STO
                                     + sum((t,i)$(not r(i)), cost_curtailment(i)*(alpha(i,t)*agen(i) - GEN(i,t)))
                                     + sum((t,r), cost_curtailment(r)*(alpha(r,t)*agen_re*SHARE_RE(r) - GEN(r,t)))
-                                )*0.0001
+                                )
 ;
 
 mkt(t)..
@@ -86,12 +85,27 @@ lom_STO(s,t)..
 res_re_share..
     sum(r, SHARE_RE(r))     =E= 1
 ;
+
 display sh_res;
 
 * fix the RE share if not optimized
+SHARE_RE.L(r) = sh_res(r);
+SHARE_RE.UP(r) = 1;
 SHARE_RE.FX(r)$(not optimize_res_share) = sh_res(r);
+* in the case of optimizing the share we need to marginally increase annual RE generation
+* to avoid unscaled infeasibilites. To not distort the comparison, we do this for both
+* cases
+agen_re = agen_re*1.000000001;
+agen(i) = agen(i)*1.000000001;
 
 model baseload /obj, mkt, res_maxGEN, res_maxSTO, lom_STO, res_re_share/;
+
+* the option file
+baseload.optfile = 1 ;
+$onecho > cplex.opt
+scaind=1
+names=no
+$offecho
 
 solve baseload using LP minimzing COST;
 

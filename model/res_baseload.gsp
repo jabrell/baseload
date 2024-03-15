@@ -31,9 +31,10 @@
         "",
         "gdx=run.gdx",
         "gdx=run.gdx license=\"//wwz-jumbo.storage.p.unibas.ch/wwz-home01$/abrell/GAMS/gamslice.txt\"",
-        "gdx=run.gdx license=\"//wwz-jumbo.storage.p.unibas.ch/wwz-home01$/abrell/GAMS/gamslice_basel.txt\"",
         "gdx=run.gdx license=\"C:/Users/abrel/Documents/GAMS/gamslice.txt\"",
-        "gdx=run.gdx license=\"C:/Users/abrel/Documents/GAMS/gamslice_basel.txt\""
+        "gdx=run.gdx license=\"C:/Users/abrel/Documents/GAMS/gamslice_basel.txt\"",
+        "gdx=run.gdx license=\"Z:/GAMS/gamslice_basel.txt\"",
+        "gdx=run.gdx license=\"//wwz-jumbo.storage.p.unibas.ch/wwz-home01$/abrell/GAMS/gamslice_basel.txt\""
     ],
     "path": ".",
     "pf": "",

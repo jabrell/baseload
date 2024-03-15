@@ -58,14 +58,19 @@ def simulate_min_storage_by_country(
 if __name__ == "__main__":
     tic = time.time()
     df = simulate_min_storage_by_country(
-        countries=["DE", "ES", "FR"],
+        countries=[
+            "FR",
+            "DE",
+            "ES",
+        ],
         dates=[
             ("2017/06/01 00:00", "2018/05/31 23:00"),
             ("2023/01/01 00:00", "2023/12/31 23:00"),
         ],
         shares_renewable=np.arange(0, 1.0001, 0.01),
         fn_out="./data/results_storage.parquet",
-        gamsopt={"license": "C:/Users/abrel/Documents/GAMS/gamslice_basel.txt"},
+        # C:/Users/abrel/Documents/
+        gamsopt={"license": "Z:/GAMS/gamslice_basel.txt"},
         label_base="base",
         fn_entsoe="./data/renewables_with_load.parquet",
     )

@@ -144,8 +144,9 @@ def simulate_min_storage(
                 f"Minimize storage need for renewable share of {share_renewable*100}%. Objective: {obj:.0f}"
             )
             lst_df.append(extract_solution_storage(sol).assign(scenario="storageOnly"))
-        except:
+        except Exception as e:
             print(f"Problems in solving for renewable share of {share_renewable}%")
+            raise e
             continue
 
         # scenarios that optimize the storage share
@@ -178,6 +179,7 @@ def simulate_min_storage(
             print(
                 f"Problems in solving for renewable share of {share_renewable}% with optimized RE technology share."
             )
+            raise e
             continue
 
     df = (
