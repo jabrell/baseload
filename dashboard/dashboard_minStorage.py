@@ -13,13 +13,15 @@ from .graphs import (
 import os
 
 
-def dashboard_minStorage(fn_results: str = None):
+def dashboard_minStorage(fn_results: str, settings: dict):
     """Run the dashboard
     Args:
         fn_results: path to file with results
+        settings: dictionary with settings for available countries and start dates
     """
     st.set_page_config(layout="wide")
-    scen_options = get_storage_scenario_options(fn_results)
+    # scen_options = get_storage_scenario_options(fn_results)
+    scen_options = settings
     with st.sidebar:
         st.subheader("Choose specification for base data")
         # select for country and start date
