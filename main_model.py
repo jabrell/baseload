@@ -3,6 +3,33 @@ import time
 import numpy as np
 import pandas as pd
 
+ALL_COUNTRIES = [
+    "DE",
+    "AT",
+    "BE",
+    "BG",
+    "HR",
+    "CZ",
+    "DK",
+    "EE",
+    "ES",
+    "FI",
+    "FR",
+    "LT",
+    "LU",
+    "HU",
+    "NL",
+    "IT",
+    "GR",
+    "PL",
+    "PT",
+    "RO",
+    # countries with no or likely wromg solar data
+    # "NO",
+    # "SE",
+    # "LV",
+]
+
 
 def simulate_min_storage_by_country(
     countries: list[str],
