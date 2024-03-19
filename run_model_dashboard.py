@@ -32,7 +32,7 @@ if __name__ == "__main__":
         "SE",
         "LV",
     ]
-    settings = {"countries": ALL_COUNTRIES, "start": "2023/01/01 00:00"}
+    settings = {"countries": ALL_COUNTRIES, "start": ["2023/01/01 00:00"]}
     dashboard_minStorage(fn_results, settings)
     # fn_gen = "./data/renewables_with_load.parquet"
     # fn_cap = "./data/renewables_capacity.parquet"
