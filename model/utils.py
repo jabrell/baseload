@@ -67,7 +67,7 @@ def create_inputs(
 
     Args:
         data: A dataframe with the following columns:
-            "demand", "renewable", "datetime"
+            "demand", renewables, "datetime"
         share_generation: multiplier used to derive total generation as multiple
             of total demand
         share_renewable: Share of renewable in total generation
@@ -87,6 +87,9 @@ def create_inputs(
         share_renewable >= 0 and share_renewable <= 1
     ), "Share of renewable has to be within the 0,1 interval."
     assert data["dateTime"].is_unique, "Date index is not unique"
+    # ensure that renewables are positive
+    for r in renewables:
+        data[r] = data[r].clip(lower=0)
     if share_renewable_technologies is None:
         share_renewable_technologies = (
             data[renewables].sum() / data[renewables].sum().sum()

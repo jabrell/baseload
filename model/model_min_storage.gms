@@ -44,6 +44,7 @@ Positive Variable
     MAX_STO         maximum amout of storage possible
     ENS(t)          energy not served (not used in this model)
     SHARE_RE(r)     share of renewable technology r in total renewable generation
+    SLACK
 ;
 
 Equations
@@ -57,8 +58,8 @@ Equations
 
 obj..
     COST                    =E= (MAX_STO
-                                    + sum((t,i)$(not r(i)), cost_curtailment(i)*(alpha(i,t)*agen(i) - GEN(i,t)))
-                                    + sum((t,r), cost_curtailment(r)*(alpha(r,t)*agen_re*SHARE_RE(r) - GEN(r,t)))
+                                 + sum((t,i)$(not r(i)), cost_curtailment(i)*(alpha(i,t)*agen(i) - GEN(i,t)))
+                                 + sum((t,r), cost_curtailment(r)*(alpha(r,t)*agen_re*SHARE_RE(r) - GEN(r,t)))
                                 )
 ;
 

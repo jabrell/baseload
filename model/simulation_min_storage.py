@@ -4,6 +4,8 @@ import gams.transfer as gt
 from .utils import create_inputs
 from .gams_model import GamsModel
 
+# TODO add share of each renewable into reporting
+
 
 def extract_solution_storage(gdx: gt.Container) -> pd.DataFrame:
     """Extract solutions for minimum storage model

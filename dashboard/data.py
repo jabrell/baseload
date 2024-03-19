@@ -245,7 +245,7 @@ def get_generation(
     return df, df_cap
 
 
-@st.cache_data
+@st.cache_data(max_entries=2, show_spinner="Getting storage statistics")
 def get_storage_stats(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Get curtailment and energy overshoot given the frame of generation
 
@@ -280,7 +280,7 @@ def get_storage_stats(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return df_, pd.DataFrame.from_dict(stats).round(1)
 
 
-@st.cache_data(max_entries=5, show_spinner="Calculating cost")
+@st.cache_data(max_entries=2, show_spinner="Calculating cost")
 def calculate_cost_storage_scenarios(
     df: pd.DataFrame, cost: dict[str:float]
 ) -> pd.DataFrame:

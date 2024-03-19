@@ -195,13 +195,17 @@ def plot_cost_storage_scenarios(df: pd.DataFrame) -> go.Figure:
         df: dataframe with results
     """
 
-    df_s = df.query(f"scenario == 'storageOnly'")[
-        ["share_renewable", "MAX_STO", "cost"]
-    ].drop_duplicates()
+    df_s = (
+        df.query(f"scenario == 'storageOnly'")[["share_renewable", "MAX_STO", "cost"]]
+        .drop_duplicates()
+        .assign(share_renewable=lambda x: (x["share_renewable"] * 100).round(1))
+    )
 
-    df_res = df.query(f"scenario == 'optimalRE'")[
-        ["share_renewable", "MAX_STO", "cost"]
-    ].drop_duplicates()
+    df_res = (
+        df.query(f"scenario == 'optimalRE'")[["share_renewable", "MAX_STO", "cost"]]
+        .drop_duplicates()
+        .assign(share_renewable=lambda x: (x["share_renewable"] * 100).round(1))
+    )
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
@@ -250,7 +254,7 @@ def plot_cost_storage_scenarios(df: pd.DataFrame) -> go.Figure:
     )
 
     fig.update_layout(
-        xaxis=dict(domain=[0, 1], title="Renewable Share"),
+        xaxis=dict(domain=[0, 1], title="Share of Renewables in Demand [%]"),
         yaxis=dict(title="Maximum Storage [MWh]", rangemode="tozero"),
         yaxis2=dict(title="Cost [€]", rangemode="tozero"),
         # legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="left", x=0.2),
@@ -274,8 +278,10 @@ def plot_storage_results(
     if re_levels is None:
         re_levels = [i / 10 for i in range(11)]
 
-    df_p = df.assign(share_renewable=lambda df: df["share_renewable"].round(2)).query(
-        f"share_renewable in {re_levels} and scenario == '{scenario}'"
+    df_p = (
+        df.assign(share_renewable=lambda df: df["share_renewable"].round(2))
+        .query(f"share_renewable in {re_levels} and scenario == '{scenario}'")
+        .assign(share_renewable=lambda x: (x["share_renewable"] * 100).round(1))
     )
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -299,8 +305,131 @@ def plot_storage_results(
     )
     fig.update_layout(
         title="Storage Level and Net-generation of Storage",
-        xaxis=dict(domain=[0, 1], title="Renewable Share"),
+        xaxis=dict(domain=[0, 1], title="Share of Renewables in Demand [%]"),
         yaxis=dict(title="Storage Level [MWh]", rangemode="tozero"),
         yaxis2=dict(title="Net-generation [MWh]"),
     )
+    return fig
+
+
+def plot_storage_level(
+    df: pd.DataFrame,
+    scenario: str = "storageOnly",
+    re_level: float = 0.5,
+    by: str = "week",
+) -> go.Figure:
+    """Plot storage level over time
+
+    Args:
+        df: dataframe with results
+        re_level: renewable level to plot
+        scenario: scenario to plot
+        by: time dimsions for the x-axis
+            possible values: "week", "day", "month"
+    """
+    df_p = (
+        df.assign(share_renewable=lambda df: df["share_renewable"].round(2))
+        .query(f"share_renewable == {re_level} and scenario == '{scenario}'")
+        .assign(
+            week=lambda x: x["date"].dt.isocalendar().week,
+            day=lambda x: x["date"].dt.dayofyear,
+            month=lambda x: x["date"].dt.month,
+        )[["date", "storageLevel", "netStorage", "week", "day", "month"]]
+    )
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Box(
+            x=df_p[by],
+            y=df_p["storageLevel"],
+            marker_color="darkblue",
+            name="Storage Level",
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Box(
+            x=df_p[by],
+            y=df_p["netStorage"],
+            marker_color="limegreen",
+            name="Net-generation",
+        ),
+        secondary_y=True,
+    )
+    fig.update_layout(
+        title=f"Storage Over Time: Scenario '{scenario}' with Renewable Share {round(re_level*100, 0)}%",
+        xaxis=dict(domain=[0, 1], title=by.capitalize()),
+        yaxis=dict(title="Storage Level [MWh]", rangemode="tozero"),
+        yaxis2=dict(title="Net-generation [MWh]"),
+    )
+    return fig
+
+
+def plot_renewable_shares(
+    df: pd.DataFrame,
+    renewables: list[str] = ["wind", "solar"],
+    scenario: str = "optimalRE",
+    add_observed: bool = True,
+):
+    """Plot share of each renewable technology in total renewable generation.
+    Args:
+        df: dataframe with hourly results
+        renewables: list of renewable technologies
+        scenario: scenario to plot (usually: optimalRE)
+        add_observed: if True, plot observed shares from storageOnly scenario
+    """
+    df_ = (
+        df[["scenario", "share_renewable"] + renewables]
+        .groupby(["scenario", "share_renewable"])[renewables]
+        .sum()
+        .assign(total=lambda x: x.sum(1))
+    )
+    df_ = (
+        (df_.div(df_["total"], axis=0) * 100)
+        .fillna(0)
+        .round(2)
+        .reset_index()
+        .assign(share_renewable=lambda x: (x["share_renewable"] * 100).round(1))
+    )
+
+    # df_.query("scenario == 'optimalRE'")
+    df_p = df_.query(f"scenario == '{scenario}'")
+    fig = go.Figure()
+
+    colors = ["darkgreen", "orange", "darkblue"]
+    for i, r in enumerate(renewables):
+        fig.add_trace(
+            go.Scatter(
+                x=df_p["share_renewable"],
+                y=df_p[r],
+                mode="lines",
+                name=r.capitalize(),
+                marker=dict(color=colors[i]),
+            )
+        )
+    # add the observed share
+    if add_observed:
+        observed = (
+            df_.query("scenario == 'storageOnly'")
+            .drop_duplicates(subset=renewables)[renewables]
+            .iloc[-1]
+            .to_dict()
+        )
+        for i, r in enumerate(renewables):
+            fig.add_trace(
+                go.Scatter(
+                    x=df_p["share_renewable"],
+                    y=len(df_p["share_renewable"]) * [observed[r]],
+                    mode="lines",
+                    name=f"{r.capitalize()} observed",
+                    line=dict(color=colors[i], dash="dot"),
+                )
+            )
+    fig.update_layout(
+        title=f"Share of Renewable Technologies in Total Renewable Generation",
+        xaxis=dict(domain=[0, 1], title="Share of Renewables in Demand [%]"),
+        yaxis=dict(
+            title="Technology Share in Total RE Generation [%]", rangemode="tozero"
+        ),
+    )
+
     return fig

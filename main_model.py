@@ -1,7 +1,8 @@
-from model import simulate_min_storage, get_entsoe_data
+import os
 import time
 import numpy as np
 import pandas as pd
+from model import simulate_min_storage, get_entsoe_data
 
 ALL_COUNTRIES = [
     "DE",
@@ -24,10 +25,10 @@ ALL_COUNTRIES = [
     "PL",
     "PT",
     "RO",
-    # countries with no or likely wromg solar data
-    # "NO",
-    # "SE",
-    # "LV",
+    # countries with no or likelyng solar data
+    "NO",
+    "SE",
+    "LV",
 ]
 
 
@@ -39,6 +40,7 @@ def simulate_min_storage_by_country(
     label_base: str,
     fn_out: str | None = None,
     gamsopt: dict[str, str] | None = None,
+    store_single_country: bool = False,
 ) -> pd.DataFrame:
     """Simulate the minimum storage model for different countries and time
     periods.
@@ -51,10 +53,14 @@ def simulate_min_storage_by_country(
         label_base: label for base scenario
         fn_out: name of output file
         gamsopt: dictionary with options for GAMS model
+        store_single_country: if True, store results for each country separately
     """
+    if store_single_country:
+        base_path = os.path.dirname(fn_out)
     lst_df = []
-    for country in countries:
-        for start, end in dates:
+    for start, end in dates:
+        lst_country = []
+        for country in countries:
             print(f"-------- Simulate for {country} from {start} to {end}")
             df_entsoe = get_entsoe_data(country, start=start, end=end, fn=fn_entsoe)
             # todo generalize the mapping
@@ -69,13 +75,24 @@ def simulate_min_storage_by_country(
                 label_base=label_base,
                 gamsopt=gamsopt,
             )
-            lst_df.append(
+            lst_country.append(
                 df.assign(
                     country=country,
                     start=str(start),
                     end=str(end),
                 )
             )
+            if store_single_country:
+                fn_out_country = os.path.join(
+                    base_path,
+                    f"{country}_{start.replace('/', '-').replace(':', '-')}.parquet",
+                )
+                df.assign(
+                    country=country,
+                    start=str(start),
+                    end=str(end),
+                ).to_parquet(fn_out_country)
+        lst_df.append(pd.concat(lst_country))
     df = pd.concat(lst_df)
     if fn_out is not None:
         df.to_parquet(fn_out)
@@ -84,22 +101,21 @@ def simulate_min_storage_by_country(
 
 if __name__ == "__main__":
     tic = time.time()
+    countries = ALL_COUNTRIES
+    dates = [
+        # ("2017/06/01 00:00", "2018/05/31 23:00"),
+        ("2023/01/01 00:00", "2023/12/31 23:00"),
+    ]
     df = simulate_min_storage_by_country(
-        countries=[
-            "FR",
-            "DE",
-            "ES",
-        ],
-        dates=[
-            ("2017/06/01 00:00", "2018/05/31 23:00"),
-            ("2023/01/01 00:00", "2023/12/31 23:00"),
-        ],
+        countries=countries,
+        dates=dates,
         shares_renewable=np.arange(0, 1.0001, 0.01),
         fn_out="./data/results_storage.parquet",
         # C:/Users/abrel/Documents/
         gamsopt={"license": "Z:/GAMS/gamslice_basel.txt"},
         label_base="base",
         fn_entsoe="./data/renewables_with_load.parquet",
+        store_single_country=True,
     )
     toc = time.time()
     print(f"Time taken: {(toc - tic)/60} minutes")
