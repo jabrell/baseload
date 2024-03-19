@@ -99,8 +99,35 @@ def simulate_min_storage_by_country(
     return df
 
 
+def get_storage_results(fn: str, country: str, start: str) -> pd.DataFrame:
+    """Get results from storage model
+
+    Args:
+        fn: name of file with results
+        country: country to filter
+        start: start date to filter
+    """
+
+    df = pd.read_parquet(
+        fn,
+        filters=[
+            ("country", "==", country),
+            ("start", "==", start),
+        ],
+    ).drop(["start", "end", "country"], axis=1)
+
+    return df
+
+
 if __name__ == "__main__":
     tic = time.time()
+    fn = "./data/results_storage.parquet"
+    # some code to upload results partioned to s3
+    # fn_s3 = "s3://jabspublicbucket/results_st"
+    # partition_cols = ["country", "start"]
+    # df = pd.read_parquet(fn)
+    # df.to_parquet(fn_s3, partition_cols=partition_cols)
+
     countries = ALL_COUNTRIES
     dates = [
         # ("2017/06/01 00:00", "2018/05/31 23:00"),

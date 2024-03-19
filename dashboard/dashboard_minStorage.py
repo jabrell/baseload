@@ -24,6 +24,7 @@ def dashboard_minStorage(fn_results: str, settings: dict):
     scen_options = settings
     with st.sidebar:
         st.subheader("Choose specification for base data")
+        st.markdown(f"Run on results file: {fn_results}")
         # select for country and start date
         country = st.selectbox(
             "Country",

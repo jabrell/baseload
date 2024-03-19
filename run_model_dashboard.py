@@ -6,6 +6,7 @@ if __name__ == "__main__":
     fn_results = (
         "https://jabspublicbucket.s3.eu-central-1.amazonaws.com/results_storage.parquet"
     )
+    fn_results = "s3://jabspublicbucket/results_st"
     ALL_COUNTRIES = [
         "DE",
         "AT",
