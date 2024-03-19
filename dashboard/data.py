@@ -313,13 +313,16 @@ def calculate_cost_storage_scenarios(
 
 
 @st.cache_data(max_entries=2, show_spinner="Load result data")
-def get_storage_results(fn: str, country: str, start: str) -> pd.DataFrame:
+def get_storage_results(
+    fn: str, country: str, start: str, storage_options: dict = None
+) -> pd.DataFrame:
     """Get results from storage model
 
     Args:
         fn: name of file with results
         country: country to filter
         start: start date to filter
+        storage_options: dictionary with options for accessing storages
     """
     df = pd.read_parquet(
         fn,
@@ -327,6 +330,7 @@ def get_storage_results(fn: str, country: str, start: str) -> pd.DataFrame:
             ("country", "==", country),
             ("start", "==", start),
         ],
+        storage_options=storage_options,
     ).drop(["start", "end", "country"], axis=1)
 
     return df

@@ -13,11 +13,12 @@ from .graphs import (
 import os
 
 
-def dashboard_minStorage(fn_results: str, settings: dict):
+def dashboard_minStorage(fn_results: str, settings: dict, storage_options: dict = None):
     """Run the dashboard
     Args:
         fn_results: path to file with results
         settings: dictionary with settings for available countries and start dates
+        storage_options: dictionary with options for storage
     """
     st.set_page_config(layout="wide")
     # scen_options = get_storage_scenario_options(fn_results)
@@ -71,7 +72,9 @@ def dashboard_minStorage(fn_results: str, settings: dict):
             f"""**Note**: No solar reported for {country}. So the share between wind and solar cannot be optimized."""
         )
 
-    df = get_storage_results(fn_results, country, start)
+    df = get_storage_results(
+        fn_results, country, start, storage_options=storage_options
+    )
 
     with st.expander("**Cost Results**", expanded=True):
         col1, col2, col3 = st.columns(3)

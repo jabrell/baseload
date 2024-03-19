@@ -1,7 +1,9 @@
 from dashboard import dashboard_minStorage
+from dashboard.data import get_storage_results
 
 
 if __name__ == "__main__":
+
     fn_results = "./data/results_storage.parquet"
     fn_results = (
         "https://jabspublicbucket.s3.eu-central-1.amazonaws.com/results_storage.parquet"
@@ -34,7 +36,8 @@ if __name__ == "__main__":
         "LV",
     ]
     settings = {"countries": ALL_COUNTRIES, "start": ["2023/01/01 00:00"]}
-    dashboard_minStorage(fn_results, settings)
-    # fn_gen = "./data/renewables_with_load.parquet"
-    # fn_cap = "./data/renewables_capacity.parquet"
-    # profile_dashboard(fn_gen, fn_cap)
+    country = "DE"
+    start = "2023/01/01 00:00"
+    storage_options = None
+    # get_storage_results(fn_results, country, start, storage_options=storage_options)
+    dashboard_minStorage(fn_results, settings, storage_options)

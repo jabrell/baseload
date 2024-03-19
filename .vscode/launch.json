@@ -15,11 +15,11 @@
       "name": "Dashboard Model",
       "type": "debugpy",
       "request": "launch",
-      "program": "run_model_dasboard.py",
+      "program": "run_model_dashboard.py",
       "console": "integratedTerminal"
     },
     {
-      "name": "Python: Current File",
+      "name": "Python: Models",
       "type": "debugpy",
       "request": "launch",
       "program": "main_model.py",
