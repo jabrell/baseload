@@ -238,6 +238,7 @@ def plot_cost_storage_scenarios(df: pd.DataFrame) -> go.Figure:
             mode="lines",
             line=dict(color="blue", dash="dot"),
             name="Cost: Storage only",
+            visible="legendonly",
         ),
         secondary_y=True,
     )
@@ -249,6 +250,7 @@ def plot_cost_storage_scenarios(df: pd.DataFrame) -> go.Figure:
             mode="lines",
             line=dict(color="green", dash="dash"),
             name="Cost: RE Portfolio + Storage",
+            visible="legendonly",
         ),
         secondary_y=True,
     )
