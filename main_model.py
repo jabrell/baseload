@@ -70,28 +70,6 @@ def run_artificial_counties(
     return df
 
 
-def get_storage_results(
-    fn: str, country: str, start: str, storage_options: dict = None
-) -> pd.DataFrame:
-    """Get results from storage model
-
-    Args:
-        fn: name of file with results
-        country: country to filter
-        start: start date to filter
-        storage_options: dictionary with options for accessing storages
-    """
-    df = pd.read_parquet(
-        fn,
-        filters=[
-            ("country", "==", country),
-            ("start", "==", start),
-        ],
-        storage_options=storage_options,
-    ).drop(["start", "end", "country"], axis=1)
-    return df
-
-
 if __name__ == "__main__":
     # fn_results = "s3://jabspublicbucket/results_artificial"
     # df = get_storage_results(
