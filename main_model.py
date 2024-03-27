@@ -30,7 +30,7 @@ def run_artificial_counties(
         fn_out: name of output file
     """
     df_in = pd.read_parquet(fn_data)
-    shares_renewable = np.arange(0, 1.0001, 0.02)
+    shares_renewable = np.arange(0, 1.0001, 0.01)
     label_base = "base"
     countries = df_in["country"].unique()
     start = df_in["dateTime"].min()
