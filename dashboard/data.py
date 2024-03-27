@@ -213,7 +213,6 @@ def get_generation(
         fn_cap,
         filters=[("country", "==", country), ("year", "==", year)],
     ).drop(["country", "year"], axis=1)
-    print("!!!!!!!!!!!!!!\n\n\n", df_cap)
     # if not data provide an empty frame
     if len(df_cap) == 0 or df_cap is None:
         return df, pd.DataFrame(
