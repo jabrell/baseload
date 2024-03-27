@@ -76,7 +76,6 @@ def dashboard_minStorage(fn_results: str, settings: dict, storage_options: dict 
     df = get_storage_results(
         fn_results, country, start, storage_options=storage_options
     )
-    print("HERE_______________________________________", df)
     with st.expander("**Cost Results**", expanded=True):
         col1, col2, col3 = st.columns(3)
         cost_res = col1.number_input(
