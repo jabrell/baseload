@@ -1,6 +1,5 @@
 import streamlit as st
 from .data import (
-    get_storage_scenario_options,
     get_storage_results,
     calculate_cost_storage_scenarios,
 )
@@ -10,7 +9,6 @@ from .graphs import (
     plot_storage_level,
     plot_renewable_shares,
 )
-import os
 
 
 def dashboard_minStorage(fn_results: str, settings: dict, storage_options: dict = None):
@@ -30,13 +28,16 @@ def dashboard_minStorage(fn_results: str, settings: dict, storage_options: dict 
         country = st.selectbox(
             "Country",
             scen_options["countries"],
-            index=scen_options["countries"].index("DE"),
+            index=scen_options["countries"].index(scen_options["default_country"]),
         )
-        start = st.selectbox(
-            "Start date",
-            scen_options["start"],
-            help="Start date for the simulation. Simulation includes 8760 hours.",
-        )
+        if scen_options.get("start") is not None:
+            start = st.selectbox(
+                "Start date",
+                scen_options["start"],
+                help="Start date for the simulation. Simulation includes 8760 hours.",
+            )
+        else:
+            start = scen_options["default_start"]
 
     st.title("Simulations for Baseload Paper")
     st.markdown(
@@ -75,7 +76,7 @@ def dashboard_minStorage(fn_results: str, settings: dict, storage_options: dict 
     df = get_storage_results(
         fn_results, country, start, storage_options=storage_options
     )
-
+    print("HERE_______________________________________", df)
     with st.expander("**Cost Results**", expanded=True):
         col1, col2, col3 = st.columns(3)
         cost_res = col1.number_input(

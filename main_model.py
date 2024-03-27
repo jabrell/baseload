@@ -1,149 +1,126 @@
 import os
 import time
+import sys
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from model import simulate_min_storage, get_entsoe_data
 
-ALL_COUNTRIES = [
-    "DE",
-    "AT",
-    "BE",
-    "BG",
-    "HR",
-    "CZ",
-    "DK",
-    "EE",
-    "ES",
-    "FI",
-    "FR",
-    "LT",
-    "LU",
-    "HU",
-    "NL",
-    "IT",
-    "GR",
-    "PL",
-    "PT",
-    "RO",
-    # countries with no or likelyng solar data
-    "NO",
-    "SE",
-    "LV",
-]
+from model import (
+    simulate_min_storage_by_country,
+    run_entsoe_countries,
+    simulate_min_storage,
+)
 
 
-def simulate_min_storage_by_country(
-    countries: list[str],
-    dates: list[tuple[str]],
-    shares_renewable: list[float],
-    fn_entsoe: str,
-    label_base: str,
-    fn_out: str | None = None,
+def run_artificial_counties(
+    fn_data: str,
     gamsopt: dict[str, str] | None = None,
-    store_single_country: bool = False,
-) -> pd.DataFrame:
-    """Simulate the minimum storage model for different countries and time
-    periods.
+    output: Any | None = None,
+    label_base: str = "base",
+    fn_out: str | None = None,
+):
+    """Run scenarios for artificial countries
 
     Args:
-        countries: list of countries
-        dates: list of start and end dates
-        shares_renewable: list of shares of renewable generation
-        fn_entsoe: name of input file with data
-        label_base: label for base scenario
-        fn_out: name of output file
+        fn_data: name of input file with data
         gamsopt: dictionary with options for GAMS model
-        store_single_country: if True, store results for each country separately
+        label_base: label for base scenario
+        output: destination of gams output stream
+        fn_out: name of output file
     """
-    if store_single_country:
-        base_path = os.path.dirname(fn_out)
-    lst_df = []
-    for start, end in dates:
-        lst_country = []
-        for country in countries:
-            print(f"-------- Simulate for {country} from {start} to {end}")
-            df_entsoe = get_entsoe_data(country, start=start, end=end, fn=fn_entsoe)
-            # todo generalize the mapping
-            tech_wind = ["windOnshore", "windOffshore"]
-            df_entsoe["wind"] = df_entsoe[tech_wind].sum(1)
-            df_entsoe = df_entsoe.drop(tech_wind, axis=1)
+    df_in = pd.read_parquet(fn_data)
+    shares_renewable = np.arange(0, 1.0001, 0.02)
+    label_base = "base"
+    countries = df_in["country"].unique()
+    start = df_in["dateTime"].min()
+    end = df_in["dateTime"].max()
 
-            df = simulate_min_storage(
-                df_entsoe,
+    # convert capacity factors to generation
+    lst_df = []
+    for country in countries:
+        print("-------- Simulate for", country)
+        df_ = df_in.query(f"country == '{country}'").drop(columns="country")
+        shares_renewable_technologies = (
+            df_[["wind_share", "solar_share"]]
+            .rename(columns={"wind_share": "wind", "solar_share": "solar"})
+            .iloc[0]
+            .to_dict()
+        )
+        data = df_.drop(columns=["wind_share", "solar_share"])
+        lst_df.append(
+            simulate_min_storage(
+                data=data,
                 shares_renewable=shares_renewable,
+                share_renewable_technologies=shares_renewable_technologies,
                 renewables=["wind", "solar"],
                 label_base=label_base,
                 gamsopt=gamsopt,
+                output=output,
+            ).assign(
+                country=country,
+                start=str(start),
+                end=str(end),
             )
-            lst_country.append(
-                df.assign(
-                    country=country,
-                    start=str(start),
-                    end=str(end),
-                )
-            )
-            if store_single_country:
-                fn_out_country = os.path.join(
-                    base_path,
-                    f"{country}_{start.replace('/', '-').replace(':', '-')}.parquet",
-                )
-                df.assign(
-                    country=country,
-                    start=str(start),
-                    end=str(end),
-                ).to_parquet(fn_out_country)
-        lst_df.append(pd.concat(lst_country))
+        )
     df = pd.concat(lst_df)
     if fn_out is not None:
         df.to_parquet(fn_out)
+    print("here")
     return df
 
 
-def get_storage_results(fn: str, country: str, start: str) -> pd.DataFrame:
+def get_storage_results(
+    fn: str, country: str, start: str, storage_options: dict = None
+) -> pd.DataFrame:
     """Get results from storage model
 
     Args:
         fn: name of file with results
         country: country to filter
         start: start date to filter
+        storage_options: dictionary with options for accessing storages
     """
-
     df = pd.read_parquet(
         fn,
         filters=[
             ("country", "==", country),
             ("start", "==", start),
         ],
+        storage_options=storage_options,
     ).drop(["start", "end", "country"], axis=1)
-
     return df
 
 
 if __name__ == "__main__":
-    tic = time.time()
-    fn = "./data/results_storage.parquet"
+    # fn_results = "s3://jabspublicbucket/results_artificial"
+    # df = get_storage_results(
+    #     fn_results, country="mildSummerPeakES_north", start="2023-01-01 00:00:00"
+    # )
+    # print("here")
+    # sys.exit()
+
     # some code to upload results partioned to s3
     # fn_s3 = "s3://jabspublicbucket/results_st"
-    # partition_cols = ["country", "start"]
+    # ]
     # df = pd.read_parquet(fn)
     # df.to_parquet(fn_s3, partition_cols=partition_cols)
-
-    countries = ALL_COUNTRIES
-    dates = [
-        # ("2017/06/01 00:00", "2018/05/31 23:00"),
-        ("2023/01/01 00:00", "2023/12/31 23:00"),
-    ]
-    df = simulate_min_storage_by_country(
-        countries=countries,
-        dates=dates,
-        shares_renewable=np.arange(0, 1.0001, 0.01),
-        fn_out="./data/results_storage.parquet",
-        # C:/Users/abrel/Documents/
-        gamsopt={"license": "Z:/GAMS/gamslice_basel.txt"},
-        label_base="base",
-        fn_entsoe="./data/renewables_with_load.parquet",
-        store_single_country=True,
+    # C:/Users/abrel/Documents/
+    gamsopt = {"license": "C:/Users/abrel/Documents/GAMS/gamslice_basel.txt"}
+    tic = time.time()
+    df = run_artificial_counties(
+        fn_data="./data/artificial_countries.parquet",
+        gamsopt=gamsopt,
+        # output=sys.stdout,
+        fn_out="./data/results_artificial.parquet",
     )
+    partition_cols = ["country"]
+    df.to_parquet(
+        "s3://jabspublicbucket/results_artificial", partition_cols=partition_cols
+    )
+
+    # to run the scenarios based on entsoe data
+    # run_entsoe_countries(gamsopt=gamsopt)
     toc = time.time()
     print(f"Time taken: {(toc - tic)/60} minutes")
     print("Finished!")

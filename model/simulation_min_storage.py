@@ -113,8 +113,8 @@ def simulate_min_storage(
         share_generation: share of total generation in demand
         fn_out: name of file to save results. If None, results are not saved
         gamsopt: dictionary with options for GAMS model
-        output: destination of gams output stream#
-        label_base: label for base scenario
+        output: destination of gams output stream
+        label_base: label for base technology
     """
     lst_df = []
     cost_curtailment = {label_base: 2}
@@ -143,7 +143,7 @@ def simulate_min_storage(
             ), f"Model did not solve correctly: {stats}"
             obj = sol["Cost"].records.iat[0, 0]
             print(
-                f"Minimize storage need for renewable share of {share_renewable*100}%. Objective: {obj:.0f}"
+                f"Minimize storage need for renewable share of {share_renewable*100}%. Objective: {obj:.02f}"
             )
             lst_df.append(extract_solution_storage(sol).assign(scenario="storageOnly"))
         except Exception as e:
@@ -174,7 +174,7 @@ def simulate_min_storage(
             ), f"Model did not solve correctly: {stats}"
             obj = sol["Cost"].records.iat[0, 0]
             print(
-                f"Minimize storage need for renewable share of {share_renewable*100}% with optimized RE technology share. Objective: {obj:.0f}"
+                f"Minimize storage need for renewable share of {share_renewable*100}% with optimized RE technology share. Objective: {obj:.02f}"
             )
             lst_df.append(extract_solution_storage(sol).assign(scenario="optimalRE"))
         except Exception as e:
