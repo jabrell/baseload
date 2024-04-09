@@ -82,6 +82,6 @@ def run_artificial_country_dashboard(
 
 if __name__ == "__main__":
     run_artificial_country_dashboard(
-        fn_results="s3://jabspublicbucket/results_artificial"
+        fn_results="s3://jabspublicbucket/results_artificial_neu"
     )
     # run_country_dashboard(fn_results="s3://jabspublicbucket/results_st")

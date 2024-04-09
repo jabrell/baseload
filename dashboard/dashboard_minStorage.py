@@ -11,12 +11,18 @@ from .graphs import (
 )
 
 
-def dashboard_minStorage(fn_results: str, settings: dict, storage_options: dict = None):
+def dashboard_minStorage(
+    fn_results: str,
+    settings: dict,
+    storage_options: dict = None,
+    show_cost: bool = False,
+):
     """Run the dashboard
     Args:
         fn_results: path to file with results
         settings: dictionary with settings for available countries and start dates
         storage_options: dictionary with options for storage
+        show_cost: whether to show the cost results
     """
     st.set_page_config(layout="wide")
     # scen_options = get_storage_scenario_options(fn_results)
@@ -77,28 +83,33 @@ def dashboard_minStorage(fn_results: str, settings: dict, storage_options: dict 
         fn_results, country, start, storage_options=storage_options
     )
     with st.expander("**Cost Results**", expanded=True):
-        col1, col2, col3 = st.columns(3)
-        cost_res = col1.number_input(
-            "Cost of installing renewable",
-            value=1.0,
-            help="The cost of installing capacity that provides the potential to proved 1 MWh over the whole time horizon [CHF/MWh]",
-            step=1.0,
-            format="%.1f",
-        )
-        cost_base = col2.number_input(
-            "Cost of installing baseload",
-            value=3.0,
-            help="The cost of installing capacity that provides the potential to proved 1 MWh over the whole time horizon [CHF/MWh]",
-            step=1.0,
-            format="%.1f",
-        )
-        cost_sto = col3.number_input(
-            "Cost of installing storage",
-            value=10.0,
-            help="The cost of installing a facility that allows to store a maximum amount of 1 MWh [CHF/MWh]",
-            step=1.0,
-            format="%.1f",
-        )
+        if show_cost:
+            col1, col2, col3 = st.columns(3)
+            cost_res = col1.number_input(
+                "Cost of installing renewable",
+                value=1.0,
+                help="The cost of installing capacity that provides the potential to proved 1 MWh over the whole time horizon [CHF/MWh]",
+                step=1.0,
+                format="%.1f",
+            )
+            cost_base = col2.number_input(
+                "Cost of installing baseload",
+                value=3.0,
+                help="The cost of installing capacity that provides the potential to proved 1 MWh over the whole time horizon [CHF/MWh]",
+                step=1.0,
+                format="%.1f",
+            )
+            cost_sto = col3.number_input(
+                "Cost of installing storage",
+                value=10.0,
+                help="The cost of installing a facility that allows to store a maximum amount of 1 MWh [CHF/MWh]",
+                step=1.0,
+                format="%.1f",
+            )
+        else:
+            cost_res = 1.0
+            cost_base = 3.0
+            cost_sto = 10.0
         cost = {
             "wind": cost_res,
             "solar": cost_res,
@@ -111,7 +122,8 @@ def dashboard_minStorage(fn_results: str, settings: dict, storage_options: dict 
             on=["scenario", "share_renewable"],
         )
         st.plotly_chart(
-            plot_cost_storage_scenarios(df_w_cost), use_container_width=True
+            plot_cost_storage_scenarios(df_w_cost, plot_cost=show_cost),
+            use_container_width=True,
         )
 
     with st.expander("**Storage Usage**", expanded=False):

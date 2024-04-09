@@ -188,11 +188,12 @@ def plot_daily_generation(
     return fig
 
 
-def plot_cost_storage_scenarios(df: pd.DataFrame) -> go.Figure:
+def plot_cost_storage_scenarios(df: pd.DataFrame, plot_cost: bool = True) -> go.Figure:
     """Plot cost of storage scenarios
 
     Args:
         df: dataframe with results
+        plot_cost: if True, plot cost on second y-axis
     """
 
     df_s = (
@@ -229,38 +230,43 @@ def plot_cost_storage_scenarios(df: pd.DataFrame) -> go.Figure:
         ),
         secondary_y=False,
     )
-
-    # add the cost on the second y-axis
-    fig.add_trace(
-        go.Scatter(
-            x=df_s["share_renewable"],
-            y=df_s["cost"],
-            mode="lines",
-            line=dict(color="blue", dash="dot"),
-            name="Cost: Storage only",
-            visible="legendonly",
-        ),
-        secondary_y=True,
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=df_res["share_renewable"],
-            y=df_res["cost"],
-            mode="lines",
-            line=dict(color="green", dash="dash"),
-            name="Cost: RE Portfolio + Storage",
-            visible="legendonly",
-        ),
-        secondary_y=True,
-    )
-
     fig.update_layout(
         xaxis=dict(domain=[0, 1], title="Share of Renewables in Demand [%]"),
         yaxis=dict(title="Maximum Storage [MWh]", rangemode="tozero"),
         yaxis2=dict(title="Cost [€]", rangemode="tozero"),
         # legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="left", x=0.2),
     )
+
+    # add the cost on the second y-axis
+    plot_cost = False
+    if plot_cost:
+        fig.add_trace(
+            go.Scatter(
+                x=df_s["share_renewable"],
+                y=df_s["cost"],
+                mode="lines",
+                line=dict(color="blue", dash="dot"),
+                name="Cost: Storage only",
+                visible="legendonly",
+            ),
+            secondary_y=True,
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=df_res["share_renewable"],
+                y=df_res["cost"],
+                mode="lines",
+                line=dict(color="green", dash="dash"),
+                name="Cost: RE Portfolio + Storage",
+                visible="legendonly",
+            ),
+            secondary_y=True,
+        )
+        fig.update_layout(
+            yaxis2=dict(title="Cost [€]", rangemode="tozero"),
+            # legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="left", x=0.2),
+        )
 
     return fig
 

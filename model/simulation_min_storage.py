@@ -119,7 +119,8 @@ def simulate_min_storage(
     lst_df = []
     cost_curtailment = {label_base: 2}
     cost_curtailment.update({r: 1 for r in renewables})
-    for share_renewable in shares_renewable:  #
+    for share_renewable in shares_renewable:
+        # ------------------------------------------------------
         # only optimize the storage share
         gdx = create_inputs(
             data,
@@ -149,8 +150,8 @@ def simulate_min_storage(
         except Exception as e:
             print(f"Problems in solving for renewable share of {share_renewable}%")
             raise e
-            continue
 
+        # ------------------------------------------------------
         # scenarios that optimize the storage share
         gdx = create_inputs(
             data,
@@ -182,7 +183,6 @@ def simulate_min_storage(
                 f"Problems in solving for renewable share of {share_renewable}% with optimized RE technology share."
             )
             raise e
-            continue
 
     df = (
         pd.concat(lst_df)
