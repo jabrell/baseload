@@ -1,6 +1,7 @@
 # custom ignores
 /_temp/
 *.gdx
+_*.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

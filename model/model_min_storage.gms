@@ -30,7 +30,7 @@ Parameter
 
 $gdxin %data%
 $load i s t r
-$loaddc dem alpha agen cost_curtailment agen_re sh_res optimize_res_share
+$loaddc dem alpha agen agen_re sh_res optimize_res_share
 
 Variable
     COST            objective value
@@ -42,9 +42,7 @@ Positive Variable
     INJ(s,t)        storage injection in period t [MW]
     REL(s,t)        storage relase in period t [MW]s
     MAX_STO         maximum amout of storage possible
-    ENS(t)          energy not served (not used in this model)
     SHARE_RE(r)     share of renewable technology r in total renewable generation
-    SLACK
 ;
 
 Equations
