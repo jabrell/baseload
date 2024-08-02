@@ -3,7 +3,7 @@ import logging
 import pandas as pd
 import tqdm
 from scipy.optimize import minimize_scalar
-from .utils import get_profiles_shares
+from .utils import get_profiles_shares, get_average_profiles
 
 
 def calculate_storage_need(
@@ -150,6 +150,80 @@ def simulate_storage_need_by_years(
                     renewableDemandShare=share_renewable,
                 )
             )
+        else:
+            failed += 1
+    df_out = pd.concat(lst_df)
+    print(f"Solve {len(all_combis)} scenarios in : {time.time() - tic:.2f} seconds.")
+    print(f"Failed to solve {failed} of {len(all_combis)} scenarios")
+    return df_out
+
+
+def simulate_storage_need_averaged(
+    country: str,
+    years: list[int],
+    share_renewable: float,
+    total_demand: float = 100,
+    fn_renewable: str = "../data/renewables_ninja.parquet",
+    fn_demand: str = "../data/renewables_with_load.parquet",
+) -> pd.DataFrame:
+    # get the profile data
+    lst_df = [
+        get_profiles_shares(
+            country=country,
+            year_re=year,
+            year_dem=year,
+            fn_renewable=fn_renewable,
+            fn_demand=fn_demand,
+        )
+        for year in years
+    ]
+    df_shares = get_average_profiles(
+        country=country, years=years, fn_renewable=fn_renewable, fn_demand=fn_demand
+    )
+
+    # optimize the storage need
+    df_opt = optimize_storage_need(
+        df_profiles=df_shares,
+        share_renewable=share_renewable,
+        total_demand=total_demand,
+    )
+    if df_opt is None:
+        logging.error(
+            f"Optimization failed for country {country} and average weather and demand year."
+        )
+        return None
+    return df_opt
+
+
+def simulate_country_averages(
+    countries: list[str],
+    shares_renewable: list[float],
+    years: list[int],
+    fn_renewable: str = "../data/renewables_ninja.parquet",
+    fn_demand: str = "../data/renewables_with_load.parquet",
+) -> pd.DataFrame:
+    tic = time.time()
+    all_combis = [(c, s) for c in countries for s in shares_renewable]
+    failed = 0
+    lst_df = []
+    total_demand = 100
+    for country, share_renewable in tqdm.tqdm(all_combis):
+        df_ = simulate_storage_need_averaged(
+            country=country,
+            years=years,
+            share_renewable=share_renewable,
+            total_demand=total_demand,
+            fn_demand=fn_demand,
+            fn_renewable=fn_renewable,
+        )
+        if df_ is not None:
+            df_ = df_.assign(
+                country=country,
+                yearWeather="average",
+                yearDemand="average",
+                renewableDemandShare=share_renewable,
+            )
+            lst_df.append(df_)
         else:
             failed += 1
     df_out = pd.concat(lst_df)

@@ -2,6 +2,35 @@ import logging
 import pandas as pd
 
 
+def get_average_profiles(
+    country: str, years: list[int], fn_renewable: str, fn_demand: str
+) -> pd.DataFrame:
+    """Get average production and demand profiles over several years for a given country.
+
+    Args:
+        country (str): ISO country code
+        years (int): years for averages
+        fn_renewable (str): path to renewable data
+        fn_demand (str): path to demand data
+
+    Returns:
+        Dataframe with average prodifles
+    """
+    # get the profile data
+    lst_df = [
+        get_profiles_shares(
+            country=country,
+            year_re=year,
+            year_dem=year,
+            fn_renewable=fn_renewable,
+            fn_demand=fn_demand,
+        )
+        for year in years
+    ]
+    df_shares = pd.concat(lst_df).reset_index().groupby("index").mean()
+    return df_shares
+
+
 def get_data_by_years(
     country: str,
     year_re: int,
