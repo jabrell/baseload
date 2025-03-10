@@ -73,7 +73,7 @@ def get_data_by_years(
 
     # ensure that we have a complete time series with all hours
     df_re = df_re.reindex(
-        pd.date_range(df_re.index.min(), df_re.index.max(), freq="H")
+        pd.date_range(df_re.index.min(), df_re.index.max(), freq="h")
     ).sort_index()
     if df_re.isna().sum().sum() > 0:
         logging.info(
@@ -81,7 +81,7 @@ def get_data_by_years(
         )
         df_re = df_re.ffill()
     df_dem = df_dem.reindex(
-        pd.date_range(df_dem.index.min(), df_dem.index.max(), freq="H")
+        pd.date_range(df_dem.index.min(), df_dem.index.max(), freq="h")
     ).sort_index()
     if df_dem.isna().sum().sum() > 0:
         logging.info(
@@ -101,7 +101,7 @@ def get_data_by_years(
 
     # create a common time index
     base_year = 2023
-    t_index = pd.date_range(f"{base_year}-01-01", freq="H", periods=8760)
+    t_index = pd.date_range(f"{base_year}-01-01", freq="h", periods=8760)
     df_re.index = t_index
     df_dem.index = t_index
     df = df_re.join(df_dem, how="outer")
