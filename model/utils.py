@@ -1,170 +1,151 @@
-import os
+import logging
 import pandas as pd
-import gams.transfer as gt
 
 
-def get_temp_dir() -> str:
-    """Get path to temporary directory. If not exists will be created"""
-    temp_dir = os.path.join(os.getcwd(), "_temp")
-    if not os.path.exists(temp_dir):
-        os.makedirs(temp_dir)
-    return temp_dir
-
-
-def get_standard_entsoe_input() -> str:
-    """Get path to standard input file with ENTSOE data"""
-    return os.path.join(
-        os.path.dirname(__file__), "..", "data", "renewables_with_load.parquet"
-    )
-
-
-def get_entsoe_data(
-    country: str, start: str, end: str, fn: str | None = None
+def get_average_profiles(
+    country: str, years: list[int], fn_renewable: str, fn_demand: str
 ) -> pd.DataFrame:
-    """Get renewable and demand data for a given country
+    """Get average production and demand profiles over several years for a given country.
 
     Args:
-        country: name of the country as letter ENTSOE code
-        start: first hour to be included
-        end: last hour to be included
-        fn: name of parquet file with input data. If empty, standard one is used.
+        country (str): ISO country code
+        years (int): years for averages
+        fn_renewable (str): path to renewable data
+        fn_demand (str): path to demand data
+
+    Returns:
+        Dataframe with average profiles
     """
-    if fn is None:
-        fn = get_standard_entsoe_input()
-    df = pd.read_parquet(
-        fn,
+    # get the profile data
+    lst_df = [
+        get_profiles_shares(
+            country=country,
+            year_re=year,
+            year_dem=year,
+            fn_renewable=fn_renewable,
+            fn_demand=fn_demand,
+        )
+        for year in years
+    ]
+    df_shares = pd.concat(lst_df).reset_index().groupby("index").mean()
+    return df_shares
+
+
+def get_data_by_years(
+    country: str,
+    year_re: int,
+    year_dem: int,
+    fn_renewable: str,
+    fn_demand: str,
+    base_year: int = 2023,
+) -> pd.DataFrame:
+    """Get wind and solar generation data together with demand for a given year
+    and country. For leap years the leap day is dropped. Missing values are
+    forward filled. Data are aligned to a common time index for the given base year.
+
+    Args:
+        country (str): ISO country code
+        year_re (int): year of renewable data
+        year_dem (int): year of demand data
+        fn_renewable (str): path to renewable data
+        fn_demand (str): path to demand data
+        base_year (int): year to which the data is aligned
+
+    Returns:
+        dataframe with hourly time index and columns for solar, wind and demand
+    """
+    df_re = pd.read_parquet(
+        fn_renewable,
         filters=[
             ("country", "==", country),
-            ("dateTime", ">=", pd.to_datetime(start)),
-            ("dateTime", "<=", pd.to_datetime(end)),
+            ("time", ">=", pd.to_datetime(f"{year_re}-01-01")),
+            ("time", "<", pd.to_datetime(f"{year_re+1}-01-01")),
         ],
-    )
+    ).pivot_table(index="time", columns="resource", values="total")
+    df_dem = pd.read_parquet(
+        fn_demand,
+        filters=[
+            ("country", "==", country),
+            ("dateTime", ">=", pd.to_datetime(f"{year_dem}-01-01")),
+            ("dateTime", "<", pd.to_datetime(f"{year_dem+1}-01-01")),
+        ],
+    ).set_index("dateTime")[["demand"]]
+
+    # ensure that we have a complete time series with all hours
+    df_re = df_re.reindex(
+        pd.date_range(df_re.index.min(), df_re.index.max(), freq="h")
+    ).sort_index()
+    if df_re.isna().sum().sum() > 0:
+        logging.info(
+            f"Missing values in renewable data for {country} in {year_re}. Filled by forward filling: {df_re.isna().sum().to_string()}"
+        )
+        df_re = df_re.ffill()
+    df_dem = df_dem.reindex(
+        pd.date_range(df_dem.index.min(), df_dem.index.max(), freq="h")
+    ).sort_index()
+    if df_dem.isna().sum().sum() > 0:
+        logging.info(
+            f"Missing values in demand data for {country} in {year_dem}. Filled by forward filling: {df_dem.isna().sum().to_string()}"
+        )
+        df_dem = df_dem.ffill()
+
+    # drop leap days
+    if len(df_re) > 8760:
+        df_re = df_re[
+            df_re.index.date != pd.to_datetime(f"{year_re}-02-29").date()
+        ].copy()
+    if len(df_dem) > 8760:
+        df_dem = df_dem[
+            df_dem.index.date != pd.to_datetime(f"{year_dem}-02-29").date()
+        ].copy()
+
+    # create a common time index
+    base_year = 2023
+    t_index = pd.date_range(f"{base_year}-01-01", freq="h", periods=8760)
+    df_re.index = t_index
+    df_dem.index = t_index
+    df = df_re.join(df_dem, how="outer")
+    assert (
+        len(df) == 8760
+    ), "Something went wrong, we should have 8760 hours in the year"
+
     return df
 
 
-def create_inputs(
-    data: pd.DataFrame,
-    share_generation: float = 1,
-    share_renewable: float = 0.5,
-    share_storage: float = 0,
-    renewables: list[str] = ["renewable"],
-    optimize_res_share: bool = False,
-    share_renewable_technologies: dict[str:float] | None = None,
-    total_demand: float | None = None,
-    cost_curtailment: dict[str, float] = {"nuclear": 1, "renewable": 0},
-    label_base: str = "nuclear",
-) -> gt.Container:
-    """Create inputs for model run based on ENTSOE renewable generation and demand.
-
-    - Total generation over the time horizon is provided as multiple of total
-      demand over the whole time horizon and then allocated to nuclear and
-      renewable generation based on the exogenous share
-    - For nuclear power the profile is assumed to be constant over the whole time
-      horizon
-    - For renewable generation the profile is inferred based in the input data
-    - Maximum storage size is determined as share of total demand
-    - Total demand can be normalized to given number
+def get_profiles_shares(
+    country: str,
+    year_re: int,
+    year_dem: int,
+    fn_renewable: str,
+    fn_demand: str,
+    label_base: str = "base",
+    base_year: int = 2023,
+) -> pd.DataFrame:
+    """Get wind and solar generation data together with demand and convert
+    them to shares of annual totals. For the base technology the share is
+    set to 1/8760.
 
     Args:
-        data: A dataframe with the following columns:
-            "demand", renewables, "datetime"
-        share_generation: multiplier used to derive total generation as multiple
-            of total demand
-        share_renewable: Share of renewable in total generation
-        renewables: list with names of renewable technologies
-        share_renewable_technologies: dictionary with share of renewable generation
-            in total renewable output (e.g. if we have wind and solar, the joint
-            output would be 100 MWh and wind has 80% share, then the dictionary
-            would be {"wind": 0.8, "solar": 0.2})
-            If None, will be inferred from the data
-        share_storage: Storage size as share of total demand
-        cost_curtailment: Cost of curtailment by technology
-        label_base: label for base technology
-    Returns
-        gdx container with data for model
+        country (str): ISO country code
+        year_re (int): year of renewable data
+        year_dem (int): year of demand data
+        fn_renewable (str): path to renewable data
+        fn_demand (str): path to demand data
+        label_base (str): label for base technology
+        base_year (int): year to which the data is aligned
+
+    Returns:
+        dataframe with hourly time index and columns for solar, wind and demand
+        containing the share of yearly totals for the 8760 hours in the years
     """
-    assert (
-        share_renewable >= 0 and share_renewable <= 1
-    ), "Share of renewable has to be within the 0,1 interval."
-    assert data["dateTime"].is_unique, "Date index is not unique"
-    # ensure that renewables are positive
-    for r in renewables:
-        data[r] = data[r].clip(lower=0)
-    if share_renewable_technologies is None:
-        share_renewable_technologies = (
-            data[renewables].sum() / data[renewables].sum().sum()
-        ).to_dict()
-    assert (
-        round(sum(share_renewable_technologies.values()), 4) == 1
-    ), "Renewable shares do not sum to 1"
-
-    gdx = gt.Container()
-
-    # total demand and generation of each technology
-    if total_demand is None:
-        total_demand = data["demand"].sum()
-
-    total_generation_base = [
-        (label_base, share_generation * total_demand * (1 - share_renewable))
-    ]
-    total_generation_renewable = share_generation * total_demand * share_renewable
-    max_storage = total_demand * share_storage
-
-    # derive profiles and demand
-    df_profiles = data[["dateTime", "demand"] + renewables].set_index("dateTime")
-    df_profiles = df_profiles / df_profiles.sum()
-    df_profiles[label_base] = 1 / len(df_profiles)
-    df_profiles = df_profiles.reset_index()
-    df_demand = df_profiles[["dateTime", "demand"]].assign(
-        demand=lambda df: df["demand"] * total_demand
+    # convert to shares of yearly totals
+    df = get_data_by_years(
+        country=country,
+        year_re=year_re,
+        year_dem=year_dem,
+        fn_renewable=fn_renewable,
+        fn_demand=fn_demand,
+        base_year=base_year,
     )
-
-    # create sets
-    i = gt.Set(
-        gdx, "i", records=([label_base] + renewables), description="Technologies"
-    )
-    r = gt.Set(
-        gdx, "r", domain=[i], records=renewables, description="renewable technologies"
-    )
-    s = gt.Set(gdx, "s", records=["storage"], description="storage")
-    t = gt.Set(gdx, "t", description="periods", records=list(data["dateTime"].unique()))
-
-    # parameters
-    gt.Parameter(gdx, "dem", domain=[t], records=data[["dateTime", "demand"]])
-    gt.Parameter(gdx, "agen", domain=[i], records=total_generation_base)
-    gt.Parameter(gdx, "agen_re", records=total_generation_renewable)
-    gt.Parameter(
-        gdx,
-        "alpha",
-        domain=[i, t],
-        records=df_profiles[["dateTime", label_base] + renewables]
-        .set_index("dateTime")
-        .stack()
-        .swaplevel()
-        .reset_index(),
-    )
-    gt.Parameter(
-        gdx,
-        "sh_res",
-        domain=[r],
-        records=share_renewable_technologies.items(),
-        description="share of renewable technologies in total renewable generation",
-    )
-    if optimize_res_share:
-        gt.Parameter(gdx, "optimize_res_share", records=[1])
-    else:
-        gt.Parameter(gdx, "optimize_res_share", records=[0])
-    gt.Parameter(gdx, "dem", domain=[t], records=df_demand)
-    gt.Parameter(
-        gdx,
-        "max_sto",
-        domain=[s],
-        records=[["storage", max_storage]],
-    )
-    gt.Parameter(
-        gdx,
-        "cost_curtailment",
-        domain=[i],
-        records=[(k, v) for k, v in cost_curtailment.items()],
-    )
-    return gdx
+    df = df.div(df.sum()).assign(**{label_base: lambda df: 1 / len(df)})
+    return df

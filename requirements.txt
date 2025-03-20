@@ -1,8 +1,0 @@
-pandas 
-streamlit
-pyarrow
-openpyxl
-plotly 
-jupyter 
-notebook
-scipy
